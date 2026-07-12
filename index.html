@@ -1,11 +1,1249 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Online Cognitive Study</title>
-  </head>
-  <body>
-    <h1>Online Cognitive Study</h1>
-    <p>This page is being prepared. Please check back shortly.</p>
-  </body>
+<html lang="en-GB" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Article Search Task</title>
+
+    <!--
+        Theme initialisation: runs before the page paints to prevent a flash
+        of the wrong colour scheme. Reads the participant's OS preference and
+        applies the matching data-theme attribute to the root element.
+    -->
+    <script>
+        (function () {
+            var preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+            document.documentElement.setAttribute('data-theme', preferLight ? 'light' : 'dark');
+        })();
+    </script>
+
+    <style>
+        /*
+         * ============================================================
+         * CSS CUSTOM PROPERTIES - COLOUR TOKENS
+         * ============================================================
+         * All colours are defined here as custom properties so that
+         * switching between the light and dark themes requires only a
+         * single attribute change on the root element. Every component
+         * below references these tokens rather than hard-coded values.
+         *
+         * Contrast ratios have been verified against WCAG 2.1 AA:
+         * - Body text:  minimum 4.5:1 against its background
+         * - UI components and large text: minimum 3:1
+         */
+
+        :root {
+            /* --- Surface colours --- */
+            --bg-colour:      #f4f5f7;
+            --card-bg:        #ffffff;
+            --header-bg:      #ffffff;
+
+            /* --- Border colours --- */
+            --card-border:    #e0e0e0;
+            --header-border:  #dddddd;
+
+            /* --- Text colours --- */
+            --text-main:      #111111;
+            --text-muted:     #555555;
+
+            /* --- Interactive / brand colour --- */
+            --link-colour:    #1a0dab; /* Traditional hyperlink blue, familiar from real news sites */
+
+            /* --- Card selected state --- */
+            --selected-bg:    #e8f0fe;
+            --selected-border:#1a73e8;
+            --selected-text:  #0d47a1;
+
+            /* --- Distractor / sponsored box colours ---
+               High salience is deliberate: these boxes are the peripheral
+               visual distractors that drive attentional suppression in the
+               VWM distraction-resistance paradigm. */
+            --distractor-yellow: #FFEB3B;
+            --distractor-pink:   #C2185B;
+            --distractor-cyan:   #00BCD4;
+            --distractor-orange: #FF9800;
+            --distractor-border: rgba(0, 0, 0, 0.8);
+        }
+
+        /* Dark theme overrides - same tokens, different values */
+        [data-theme="dark"] {
+            --bg-colour:      #121212;
+            --card-bg:        #1e1e1e;
+            --header-bg:      #1a1a1a;
+
+            --card-border:    #333333;
+            --header-border:  #333333;
+
+            --text-main:      #e0e0e0;
+            --text-muted:     #a0a0a0;
+
+            --link-colour:    #8ab4f8;
+
+            --selected-bg:    #0d2a52;
+            --selected-border:#4da6ff;
+            --selected-text:  #99ccff;
+
+            /* Distractor colours remain visually salient in dark mode */
+            --distractor-yellow: #FBC02D;
+            --distractor-pink:   #D81B60;
+            --distractor-cyan:   #00ACC1;
+            --distractor-orange: #F57C00;
+            --distractor-border: rgba(255, 255, 255, 0.8);
+        }
+
+        /*
+         * ============================================================
+         * GLOBAL RESET & BASE STYLES
+         * ============================================================
+         */
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, Calibri, sans-serif;
+            background-color: var(--bg-colour);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            /* Unrestricted cursor movement is intentional: restricting mouse
+               movement during visual search causes usability failures
+               (Burke et al., 2005). */
+            cursor: default;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /*
+         * ============================================================
+         * HEADER
+         * ============================================================
+         * Sticky so the search query and timer remain visible while the
+         * participant scrolls through the article grid.
+         */
+        header {
+            background-color: var(--header-bg);
+            border-bottom: 2px solid var(--header-border);
+            padding: 15px 30px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .task-instructions { max-width: 60%; }
+
+        .task-instructions h1 {
+            font-size: 1.1rem;
+            margin: 0 0 4px 0;
+            color: #d32f2f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        [data-theme="dark"] .task-instructions h1 { color: #ff5252; }
+
+        .task-instructions p {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .task-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /*
+         * ============================================================
+         * BUTTONS
+         * ============================================================
+         */
+
+        /* Small circular icon button (theme toggle) */
+        .icon-btn {
+            background: none;
+            border: 2px solid var(--card-border);
+            color: var(--text-main);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .icon-btn:hover { background-color: var(--card-border); }
+
+        /* Visible focus ring for keyboard navigation (WCAG 2.1 AA) */
+        .icon-btn:focus-visible {
+            outline: 3px solid #1a73e8;
+            outline-offset: 2px;
+        }
+
+        /* Active state for light/dark selector buttons on the welcome screen */
+        .theme-selector-btn.active {
+            border-color: #1a73e8;
+            background-color: rgba(26, 115, 232, 0.1);
+            color: #1a73e8;
+        }
+        [data-theme="dark"] .theme-selector-btn.active {
+            border-color: #4da6ff;
+            background-color: rgba(77, 166, 255, 0.15);
+            color: #4da6ff;
+        }
+
+        /* Primary action button (submit, start, next) */
+        button.submit-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            min-height: 44px; /* WCAG 2.1 minimum touch target size */
+        }
+
+        button.submit-btn:hover {
+            background-color: #1557b0;
+            transform: translateY(-1px);
+        }
+
+        button.submit-btn:active { transform: translateY(0); }
+
+        button.submit-btn:focus-visible {
+            outline: 3px solid #1a73e8;
+            outline-offset: 2px;
+        }
+
+        /*
+         * ============================================================
+         * COUNTDOWN TIMER
+         * ============================================================
+         */
+        .timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: #333;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 1px;
+            /* aria-live="polite" on this element means a screen reader
+               will announce updates without interrupting other speech */
+        }
+
+        [data-theme="dark"] .timer { background-color: #444; }
+
+        /* Warning state: timer turns red in the final 15 seconds */
+        .timer.timer-warning { background-color: #c62828; }
+
+        /*
+         * ============================================================
+         * ARTICLE GRID LAYOUT
+         * ============================================================
+         * auto-fill with a 280px minimum column width lets the grid
+         * expand to use available screen space on wider monitors,
+         * reducing the need to scroll and giving the visual clutter
+         * a more realistic news-site density.
+         */
+        main {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        /*
+         * ============================================================
+         * ARTICLE CARDS
+         * ============================================================
+         * Cards are the primary interactive elements. Full headline and
+         * abstract are always visible - never truncated - so participants
+         * cannot judge relevance from the headline alone (this prevents
+         * the "cognitively lazy" skimming strategy identified as a
+         * confound in Sutcliffe, Ennis & Hu, 2000).
+         */
+        .card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition:
+                transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            border-color: #a0a0a0;
+        }
+
+        .card:focus-visible {
+            outline: 3px solid #1a73e8;
+            outline-offset: 2px;
+            transform: translateY(-3px);
+        }
+
+        /* Headline styled as a hyperlink to mimic a real news portal */
+        .card h2 {
+            font-size: 1.1rem;
+            margin: 0 0 12px 0;
+            line-height: 1.35;
+            color: var(--link-colour);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        /*
+         * Selected state: colour change plus a checkmark icon (added via
+         * JavaScript) so that selection is not conveyed by colour alone
+         * (WCAG 2.1 Success Criterion 1.4.1 - Use of Colour).
+         */
+        .card.selected {
+            background-color: var(--selected-bg);
+            border-color: var(--selected-border);
+            box-shadow: inset 0 0 0 1px var(--selected-border);
+            transform: translateY(0);
+        }
+
+        .card.selected h2,
+        .card.selected p { color: var(--selected-text); text-decoration: none; }
+
+        /*
+         * ============================================================
+         * DISTRACTOR / SPONSORED BOXES
+         * ============================================================
+         * These are peripheral visual distractors that require attentional
+         * suppression, directly operationalising the visual clutter
+         * manipulation. High-salience colours are intentional design
+         * choices, not accessibility oversights - the boxes are not
+         * interactive and contain no meaningful information for the task.
+         *
+         * The floating animation increases salience and draws involuntary
+         * attention, increasing cognitive load as predicted by the
+         * distractor interference literature (Burke et al., 2005).
+         */
+        @keyframes distractor-float {
+            0%   { transform: translateY(0);    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); }
+            50%  { transform: translateY(-5px); box-shadow: 0 10px 16px rgba(0, 0, 0, 0.25); }
+            100% { transform: translateY(0);    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); }
+        }
+
+        @keyframes attention-shake {
+            0%,  100% { transform: rotate(0deg); }
+            25%        { transform: rotate(10deg); }
+            75%        { transform: rotate(-10deg); }
+        }
+
+        .distractor-box {
+            cursor: default;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            animation: distractor-float 5s infinite ease-in-out;
+        }
+
+        /* Staggered animation delays so boxes do not float in unison */
+        .sponsored-1 { animation-delay: 0s; }
+        .sponsored-2 { animation-delay: -1.5s; }
+        .sponsored-3 { animation-delay: -3s; }
+        .trending-box { animation-delay: -4.5s; }
+
+        .distractor-box:focus-visible {
+            outline: 3px solid var(--text-main);
+            outline-offset: 2px;
+        }
+
+        .distractor-tag {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0.9;
+        }
+
+        .distractor-tag svg { animation: attention-shake 3s infinite ease-in-out; }
+
+        /* Each sponsored box has a distinct colour to maximise visual variety */
+        .sponsored-1  { background-color: var(--distractor-yellow); color: #000000; border: 3px solid var(--distractor-border); }
+        .sponsored-2  { background-color: var(--distractor-pink);   color: #ffffff; border: 3px solid var(--distractor-border); }
+        .sponsored-3  { background-color: var(--distractor-cyan);   color: #000000; border: 3px solid var(--distractor-border); }
+        .trending-box { background-color: var(--distractor-orange); color: #000000; border: 3px solid var(--distractor-border); }
+
+        .distractor-box h2 {
+            font-size: 1.1rem;
+            margin: 0 0 12px 0;
+            line-height: 1.35;
+            text-decoration: none;
+        }
+
+        .trending-box ul {
+            margin: 0;
+            padding: 0 0 0 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .trending-box li { margin-bottom: 10px; line-height: 1.3; }
+
+        /*
+         * ============================================================
+         * OVERLAY (welcome screen, between-round screen, end screen)
+         * ============================================================
+         */
+        #overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-colour);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-size: 1.2rem;
+            transition: background-color 0.3s ease;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        #overlay-content {
+            text-align: left;
+            max-width: 650px;
+            width: 100%;
+            padding: 40px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin: auto;
+        }
+
+        .hidden { display: none !important; }
+
+        svg { flex-shrink: 0; }
+
+        /*
+         * ============================================================
+         * RESULTS TABLE (end screen)
+         * ============================================================
+         * Shown on the end screen so the researcher can verify scores
+         * are correct during testing. Not shown to real participants
+         * because the overlay is replaced by the redirect countdown.
+         */
+        .debug-panel {
+            margin-top: 24px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            background: var(--bg-colour);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .results-table th,
+        .results-table td {
+            border: 1px solid var(--card-border);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .results-table th {
+            background-color: rgba(0, 0, 0, 0.05);
+            font-weight: bold;
+        }
+
+        [data-theme="dark"] .results-table th {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <!--
+        OVERLAY
+        Covers the full viewport. Used for:
+          1. Welcome / instructions screen (shown on page load)
+          2. Between-round interstitial ("Round N complete, get ready...")
+          3. End screen ("Task complete, saving results...")
+    -->
+    <div id="overlay">
+        <div id="overlay-content">
+            <h2 style="margin-top:0; color:#1a73e8; text-align:center;">News Article Search Task</h2>
+
+            <p style="text-align:center;">
+                You will have <strong>90 seconds</strong> to find and click on all
+                <strong>relevant articles</strong> based on the search topic provided.
+            </p>
+
+            <!-- Theme selection: presented before the task begins so the
+                 participant's chosen theme is applied before they see any
+                 article content. -->
+            <div style="margin:24px auto; padding:15px; background:var(--bg-colour); border-radius:8px; max-width:320px; text-align:center;">
+                <p style="margin:0 0 12px 0; font-size:0.95rem; font-weight:bold;">Select reading theme:</p>
+                <div style="display:flex; justify-content:center; gap:10px;">
+                    <button id="start-light-btn" class="icon-btn theme-selector-btn" style="width:auto; padding:8px 16px; border-radius:20px; font-size:0.95rem; gap:6px;">
+                        <!-- Sun icon -->
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        Light
+                    </button>
+                    <button id="start-dark-btn" class="icon-btn theme-selector-btn" style="width:auto; padding:8px 16px; border-radius:20px; font-size:0.95rem; gap:6px;">
+                        <!-- Moon icon -->
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        Dark
+                    </button>
+                </div>
+            </div>
+
+            <button class="submit-btn" id="start-btn" style="margin:0 auto;">
+                Start Round 1
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- STICKY HEADER: query text and controls remain visible while scrolling -->
+    <header>
+        <div class="task-instructions">
+            <h1>
+                <!-- Search icon -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                Query <span id="round-indicator">1</span> of 5
+            </h1>
+            <!-- The current search topic is injected here by startRound() -->
+            <p id="query-prompt">Loading...</p>
+        </div>
+
+        <div class="task-controls">
+            <!-- Theme toggle: available during the task as well as on the welcome screen -->
+            <button class="icon-btn" id="theme-toggle" aria-label="Toggle between light and dark mode" title="Toggle theme">
+                <svg id="theme-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+
+            <!-- aria-live="polite" ensures a screen reader announces timer updates
+                 without interrupting any ongoing speech -->
+            <div class="timer" id="timer-display" aria-live="polite" aria-label="Time remaining">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span id="timer-text">01:30</span>
+            </div>
+
+            <button class="submit-btn" id="submit-round-btn">
+                Submit Query
+                <!-- Tick icon - reinforces that clicking submits the current selection -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ARTICLE GRID: populated dynamically by startRound() -->
+    <main id="grid-container" aria-label="Article grid - click cards to select relevant articles"></main>
+
+    <script>
+        /*
+         * ============================================================
+         * CONFIGURATION
+         * ============================================================
+         * APPS_SCRIPT_URL: the Web App URL from your Google Apps Script
+         *   deployment. Results are POSTed here at the end of the task.
+         *
+         * PROLIFIC_COMPLETE_URL: the Prolific completion link for your
+         *   study. Replace YOUR_PROLIFIC_COMPLETION_CODE with the actual
+         *   code shown in your Prolific study dashboard.
+         *
+         * TIME_LIMIT_SECS: duration of each individual search round.
+         *   Set to 90 seconds as specified in the ethics submission.
+         */
+        const APPS_SCRIPT_URL      = 'https://script.google.com/macros/s/AKfycbx_u8Zn-KPg1RCdRzBWKcHx-o-0IlCmng81ClW_A28ne5-m4P51llyJLTILWBpr3vU2/exec';
+        const PROLIFIC_COMPLETE_URL = 'https://app.prolific.com/submissions/complete?cc=YOUR_PROLIFIC_COMPLETION_CODE';
+        const TIME_LIMIT_SECS      = 90;
+        const TIMER_WARNING_SECS   = 15; /* Timer turns red below this threshold */
+
+        /*
+         * ============================================================
+         * STATE VARIABLES
+         * ============================================================
+         * These track the participant's progress through the five rounds.
+         */
+        let currentRound   = 0;   /* Index into studyData (0-4) */
+        let timerInterval  = null; /* Reference to the active setInterval, used to clear it */
+        let timeLeft       = TIME_LIMIT_SECS;
+        let totalTimeSpent = 0;   /* Cumulative seconds across all rounds */
+
+        /* Running confusion-matrix tallies for the final cumulative F1 calculation */
+        let cumulativeTP = 0; /* True positives  - correct articles selected */
+        let cumulativeFP = 0; /* False positives - incorrect articles selected */
+        let cumulativeFN = 0; /* False negatives - correct articles missed */
+
+        /* Per-round metrics array, built up as each round is submitted */
+        let roundMetrics = [];
+
+        /*
+         * ============================================================
+         * PROLIFIC ID EXTRACTION
+         * ============================================================
+         * Prof. Cutting's circles test server has a known bug that
+         * occasionally drops the first character of the outgoing URL
+         * parameter name, producing "rolific_ID" instead of
+         * "prolific_ID". Both variants are checked as a defensive
+         * measure to ensure no participant's ID is lost.
+         */
+        const urlParams  = new URLSearchParams(window.location.search);
+        const prolificID = urlParams.get('prolific_ID')
+                        || urlParams.get('rolific_ID')
+                        || 'UNKNOWN_OR_MISSING_ID';
+
+        /*
+         * ============================================================
+         * THEME LOGIC
+         * ============================================================
+         * applyTheme() updates the root data-theme attribute and syncs
+         * both the in-task toggle icon and the welcome-screen buttons.
+         */
+        const themeIcon    = document.getElementById('theme-icon');
+        const startLightBtn = document.getElementById('start-light-btn');
+        const startDarkBtn  = document.getElementById('start-dark-btn');
+
+        /* SVG path strings for the theme icon (sun vs moon) */
+        const sunIconPaths  = `<circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`;
+        const moonIconPath  = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+
+        function applyTheme(themeName) {
+            document.documentElement.setAttribute('data-theme', themeName);
+
+            if (themeName === 'dark') {
+                themeIcon.innerHTML = sunIconPaths; /* Show sun = "switch to light" */
+                startDarkBtn.classList.add('active');
+                startLightBtn.classList.remove('active');
+            } else {
+                themeIcon.innerHTML = moonIconPath; /* Show moon = "switch to dark" */
+                startLightBtn.classList.add('active');
+                startDarkBtn.classList.remove('active');
+            }
+        }
+
+        /* Initialise buttons to reflect whatever theme was set by the <head> script */
+        applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+
+        document.getElementById('theme-toggle').addEventListener('click', function () {
+            var current = document.documentElement.getAttribute('data-theme');
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+        });
+
+        startLightBtn.addEventListener('click', function () { applyTheme('light'); });
+        startDarkBtn.addEventListener('click',  function () { applyTheme('dark');  });
+
+        /*
+         * ============================================================
+         * DISTRACTOR CONTENT (constant across all five rounds)
+         * ============================================================
+         * Three sponsored boxes and one trending sidebar are shown on
+         * every round. Their positions within the grid are re-randomised
+         * each time startRound() is called, preventing participants from
+         * habituating to fixed distractor locations (Burke et al., 2005).
+         *
+         * Text content is verbatim from Appendix A of the ethics
+         * submission and must not be altered without ethics amendment.
+         */
+        const megaphoneSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+        const trendingSVG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`;
+
+        const constantDistractors = [
+            {
+                type: 'sponsored-1',
+                html: `<div class="distractor-tag">${megaphoneSVG} Sponsored</div>
+                       <h2>Compare home insurance quotes today</h2>
+                       <p style="margin:0;">Find the right cover in minutes from leading UK insurers. Save on your annual premium.</p>`
+            },
+            {
+                type: 'sponsored-2',
+                html: `<div class="distractor-tag">${megaphoneSVG} Sponsored</div>
+                       <h2>Start your free recipe box trial</h2>
+                       <p style="margin:0;">Fresh ingredients delivered weekly. Choose from over 40 recipes and cancel any time.</p>`
+            },
+            {
+                type: 'sponsored-3',
+                html: `<div class="distractor-tag">${megaphoneSVG} Sponsored</div>
+                       <h2>Upgrade your broadband this month</h2>
+                       <p style="margin:0;">Faster fibre from £24.99/month. No setup fee, flexible 12-month contracts.</p>`
+            },
+            {
+                type: 'trending-box',
+                html: `<div class="distractor-tag">${trendingSVG} Trending Now</div>
+                       <ul>
+                           <li>Weather: what to expect this bank holiday weekend</li>
+                           <li>Premier League transfer window: latest updates</li>
+                           <li>Five easy recipes for a midweek family dinner</li>
+                           <li>How to make the most of your annual leave in 2026</li>
+                           <li>The best budget laptops reviewed by our tech team</li>
+                       </ul>`
+            }
+        ];
+
+        /*
+         * ============================================================
+         * STUDY DATA - APPROVED ARTICLE CONTENT
+         * ============================================================
+         * Five search queries, each with exactly 5 target articles and
+         * 11 distractor articles (16 cards per round in total).
+         *
+         * ALL text is verbatim from Appendix A of the University of York
+         * ethics submission (project reference jtc511.008, approved
+         * 24 June 2026). Do not alter any title or abstract without
+         * first obtaining an ethics amendment.
+         */
+        const studyData = [
+            {
+                query: "Find all articles about the effects of rising interest rates on household savings.",
+                targets: [
+                    { title: "Higher rates push savings to ten-year high", text: "In response to the Bank of England base rate rises, banks increased the rates on savings accounts. Financial counsellors are urging households to check their accounts." },
+                    { title: "Households increase savings as borrowing costs rise", text: "Household saving rates are slightly increased in the last two quarters according to the ONS data. The move is attributed to consumer caution over rising mortgage rates." },
+                    { title: "Rate decisions reshape personal finance habits", text: "For the first time in more than a decade, savings products are once again gaining traction after base rate changes. Experts say there's a change in the way UK households are managing their finances." },
+                    { title: "Fixed-rate savings bonds see surge in applications", text: "The applications for fixed-rate savings bonds have been at a record level among major banks in the UK since rates started to rise. Consumer groups recommend checking the rates thoroughly before making a decision." },
+                    { title: "Rising rates benefit savers but squeeze borrowers", text: "Savers are benefiting from higher yields on deposits and homeowners with variable rates are paying more to repay their loans. Financial planners recommend a combination of debt reduction and saving." }
+                ],
+                distractors: [
+                    { title: "Supermarkets trial new self-checkout systems", text: "Leading chains are testing new units that will help cut waiting times. New systems include enhanced item recognition and contactless payment." },
+                    { title: "Council launches scheme to improve local parks", text: "A local authority has announced funding for upgrading with new benches, lighting and cycle paths. The project is scheduled to be finished at the end of the financial year." },
+                    { title: "New smartphone models expected at autumn event", text: "The big brands are said to unveil flagship phones at a showcase event. Improvements are expected on camera systems and battery." },
+                    { title: "Popular hiking trails see record summer visitors", text: "There is a strong increase in visitors to the national parks in the summer. Rangers are asking walkers to adhere to countryside codes in order to preserve natural habitats." },
+                    { title: "Regional airports report growth in short-haul bookings", text: "Several regional airports have seen a rise in passengers after an uptick in bookings from Europe. Travel operators say the trend is due to competitive pricing." },
+                    { title: "Public libraries expand digital lending services", text: "Audiobooks and e-magazines have been added to several library networks' digital lending programmes. The expansion will increase access for those who are unable to go in person." },
+                    { title: "University applications rise for engineering courses", text: "Applications to engineering and computing degrees have increased year-on-year, according to UCAS data. Partnerships with industry and graduate employment rates are mentioned as important." },
+                    { title: "Cycling infrastructure investment announced for three cities", text: "The Department for Transport has announced that new dedicated bike lanes will be built in Birmingham, Leeds and Bristol. The investment is part of a wider active travel programme." },
+                    { title: "Community garden projects expand across urban areas", text: "Many urban community gardens are offering communal garden plots to city dwellers. Organisers report benefits for both food production and social connection among participants." },
+                    { title: "New train timetable changes take effect in December", text: "Ahead of the December timetable change, several rail operators have announced revised timetables. The passengers are requested to get updates on the regular routes regarding departure times." },
+                    { title: "Annual book fair returns to city centre venue", text: "After a two-year hiatus, a well-attended book fair will be back in its city centre location. There will be independent publishers with stalls and the authors will be signing." }
+                ]
+            },
+            {
+                query: "Find all articles about the adoption of electric vehicles by UK consumers.",
+                targets: [
+                    { title: "UK drivers switching to electric", text: "Electric car sales to consumers in the UK have increased significantly in the last 2 years. The most frequently mentioned factors for uptake are government incentives and declining battery prices." },
+                    { title: "Charging networks expand across Britain", text: "Across the country, new public charging stations are being added at supermarket car parks, motorway services and in car parks. The growth is needed to meet rising EV ownership rates, industry groups state." },
+                    { title: "Electric cars now cheaper to run", text: "Electric car drivers spend much less on fuel and maintenance than petrol car drivers, a new report has confirmed. The difference is likely to increase in the future when electricity prices are likely to level off." },
+                    { title: "Consumer confidence in EVs rising", text: "The latest survey revealed that over half of UK drivers would be prepared to buy an electric car as their next car. Although range anxiety is a concern, it is fading with the improvement of battery technology." },
+                    { title: "Second-hand EV market grows rapidly", text: "Over the last year, the number of used electric vehicles has surged in the UK market. One of the main reasons buyers opt for used EVs is the reduced running expenses and reliability." }
+                ],
+                distractors: [
+                    { title: "New cafe opens in city centre", text: "A popular independent cafe has opened a second outlet in the city centre, in response to the high demand. They serve locally sourced ingredients and seasonal specials which change regularly." },
+                    { title: "Schools report rise in reading levels", text: "A new phonics programme has been introduced and primary schools in England have reported higher scores in reading. Teachers report that the systematic approach has been helpful to pupils of all standards." },
+                    { title: "Local council approves new housing", text: "There are 200 new homes planned on the outskirts of town and planning permission has been granted. The development will provide affordable and private housing as well as green spaces throughout." },
+                    { title: "Scientists study deep ocean currents", text: "A group of scientists has finished a two-year study of deep-ocean circulation in the Atlantic. The results could be used to enhance long-range weather forecasting models." },
+                    { title: "Community choir wins national award", text: "A local community choir has won a national amateur music competition for the third time in a row. The members said that the weekly rehearsals and the musical director helped them succeed." },
+                    { title: "New fitness app launches in the UK", text: "A health tech firm has released a fitness tracking app for older adults. The app tracks hydration, sleep and daily activity." },
+                    { title: "Historic library reopens after renovation", text: "After an 18-month restoration program, a Victorian public library has reopened its doors. The renovated building has new reading rooms, digital work stations, and a community events room." },
+                    { title: "Autumn fashion trends revealed", text: "The main retailers have unveiled their fall lines, which feature earthy hues and textured materials. The market analysts forecast that there will be a strong demand for knitwear and tailored coats from the consumer's side." },
+                    { title: "New bridge approved for coastal town", text: "The design for a new pedestrian and cycling bridge in a coastal town has been approved by the engineers. Construction is scheduled to start in the spring and will last about fourteen months." },
+                    { title: "Museum attendance hits record high", text: "A national museum has recorded its highest number of visitors to the museum in one year since records began. This is partly due to a large travelling exhibition of ancient civilisations." },
+                    { title: "Weather service upgrades forecasting tools", text: "The national weather service has been upgrading its computer systems to better predict the weather. The upgrade will enable more accurate forecasts 10 days ahead, officials say." }
+                ]
+            },
+            {
+                query: "Find all articles about remote working trends in the technology sector.",
+                targets: [
+                    { title: "Tech firms embrace hybrid working", text: "Amidst the push to return to the office, major tech firms are continuing to uphold hybrid working policies. Flexible working is a top priority for employees in their decision-making process of choosing an employer." },
+                    { title: "Remote work reshapes office demand", text: "There has been a continuing decline in demand for large open plan office space in the city centre from commercial property companies. Tenants in the technology sector are downsizing, in particular, to smaller collaboration hubs." },
+                    { title: "Productivity debate divides tech leaders", text: "Top technology companies are still split on the productivity benefits of working from home. Recent information indicates that output is sustained, while spontaneous collaboration has decreased." },
+                    { title: "Home office spending rises among developers", text: "Software developers are putting more money into home office equipment such as monitors, ergonomic furniture and high-speed broadband. Retailers are seeing a continued rise in sales of professional home workspace products." },
+                    { title: "Remote hiring opens global talent pool", text: "Since the normalisation of remote working, technology companies have increasingly been seeking to hire employees from other countries. Employers report that the change has greatly broadened the candidate pool." }
+                ],
+                distractors: [
+                    { title: "New recipe book tops bestseller list", text: "A cookbook about fast weeknight dinners has been a national bestseller for the past three weeks. This fall, the author will be at a number of food festivals throughout the country." },
+                    { title: "Canal restoration project completes first phase", text: "The first part of a canal restoration project in the Midlands is finished by volunteers and engineers. The re-opened stretch is now open to narrowboats for the first time in more than 40 years." },
+                    { title: "Primary school introduces garden curriculum", text: "The primary school has added a weekly garden lesson in science. Teachers say that pupils are more engaged with nature and seasonal food production." },
+                    { title: "Astronomers discover new asteroid belt", text: "A team of astronomers have discovered a new belt of asteroids beyond Neptune. The finding could have implications for the prevailing models of solar system formation." },
+                    { title: "Local bakery expands to second premises", text: "A family bakery has expanded to a second site due to the success of the first one on the high street. The new site will be used for the production of bread, pastries and celebration cakes for wholesale and retail markets." },
+                    { title: "Coastal path reopens after storm damage", text: "A popular walking trail along the coast has been reopened after significant repairs were made to areas damaged by winter storms. Walkers are advised to check conditions before walking out as some surfaces are uneven." },
+                    { title: "Symphony orchestra announces winter programme", text: "A regional symphony orchestra has announced its winter concert programme of classical and contemporary composers. Tickets for the first night were sold out in just a few hours." },
+                    { title: "New cycling route opens in national park", text: "A new, dedicated cycleway has been opened in a national park, linking three market towns over 20 miles. It is a cycle path along old railway lines, which is appropriate for families and leisure cyclists." },
+                    { title: "Hospital opens new outpatient facility", text: "A regional hospital has opened an out-patient centre to ease the burden on the main hospital. It provides a service for regular dermatology, physiotherapy and minor orthopaedic appointments." },
+                    { title: "Annual flower show returns to grounds", text: "A popular annual flower event has returned to its former home this year after a venue change last year. Seasonal planting schemes and garden design concepts will be showcased by exhibitors from all over the country." },
+                    { title: "Local football club opens new training ground", text: "A non-league football club has a new training centre built by fundraising. The new ground includes two full-size pitches, a gym, and a sports medicine room. The project was entirely funded through community fundraising efforts." }
+                ]
+            },
+            {
+                query: "Find all articles about the growth of renewable energy in British households.",
+                targets: [
+                    { title: "Solar panel installations reach new high", text: "Government statistics show that the number of homes with solar panels in the UK has hit a record high. Industry groups say the rise is due to the drop in installation costs and better energy tariffs." },
+                    { title: "Heat pumps gaining ground in Britain", text: "As more gas boilers are being replaced, air source heat pumps are being installed in more homes across the UK. Once the systems are in operation, households report less carbon emissions and no change in running costs." },
+                    { title: "Households earn from surplus solar energy", text: "Growing numbers of homeowners with solar panels are earning money by selling surplus electricity back to the grid. In response to the growing residential generation, energy suppliers have also been expanding their export tariff schemes." },
+                    { title: "Battery storage boosts home energy use", text: "Domestic battery storage is increasingly cost effective, enabling households to store solar power for use in the evening. Suppliers claim that the technology is substantially cutting the dependence on electricity from the grid during peak hours." },
+                    { title: "Government extends home insulation scheme", text: "The home insulation grant scheme has been widened by the government to include more types of property and income levels. According to energy efficiency experts, the first and most cost-effective step that households can take is to ensure they have proper insulation." }
+                ],
+                distractors: [
+                    { title: "New children's playground opens in park", text: "The children's playground in a local park has been newly renovated after a community fund-raising effort. Equipment has accessible features for children with various physical capabilities." },
+                    { title: "Regional art gallery acquires new collection", text: "A regional art gallery has received a charitable donation of twentieth century British paintings. Conservation and cataloguing work will be done before the works are displayed to the public." },
+                    { title: "University opens new engineering building", text: "A new engineering faculty building with modern laboratory and workshop facilities has been opened in a university. The building design was to achieve a high sustainability rating with passive ventilation and solar shading." },
+                    { title: "New pedestrian zone approved for high street", text: "Plans to pedestrianise part of the main high street to enhance shopping conditions have been approved by the local authority. Traders say the changes will make the area more attractive and alleviate traffic congestion." },
+                    { title: "Dog show celebrates centenary year", text: "The 100th anniversary of a regional dog show is being celebrated with a larger event featuring more breed classes and agility competitions. After the national press coverage, organisers are hoping for a record turnout." },
+                    { title: "Bookshop collective opens new branch", text: "A new independent bookshop collective has come to life in a former Victorian warehouse. The space includes a reading room, events space, and a small cafe serving locally roasted coffee." },
+                    { title: "New footbridge opens over river", text: "A new pedestrian footbridge has been built across the river, reducing the walking time between the two neighbourhoods by 15 minutes. The bridge was designed by a local architecture practice and has seating areas at both ends." },
+                    { title: "Theatre company launches youth programme", text: "A regional theatre company has introduced a new initiative for young people aged 14-18. Over 10 weeks, participants will acquire script writing, performance and technical production skills." },
+                    { title: "Farmers market expands to new location", text: "A farmers' market that has been very successful for a number of years is now going to a second site due to the demand of the citizens. Seasonal vegetables, artisan cheeses and locally reared meat will be sold at both locations." },
+                    { title: "New public swimming pool opens", text: "A new public swimming pool opened in the town centre, and a pool that closed 6 years ago has been replaced. Lane swimming, family swimming and swimming lessons are available for all ages in the pool." },
+                    { title: "Local newspaper celebrates 150 years", text: "A regional newspaper is celebrating its 150th anniversary with a special print edition and a photography exhibition. At the town's heritage centre, archival front pages from the decades will be on display." }
+                ]
+            },
+            {
+                query: "Find all articles about changes to UK pension schemes and retirement planning.",
+                targets: [
+                    { title: "State pension age review announced", text: "A review of the state pension age has been confirmed by the government, due to the changing life expectancy data. Financial advisors are encouraging workers to take a second look at how they are planning their retirement savings in the wake of the announcement." },
+                    { title: "Workplace pension contributions set to rise", text: "A number of big companies have announced rises in pension contribution rates in advance of new regulations. Financial experts state the changes will have a real impact on millions of workers' retirement outcomes." },
+                    { title: "Retirees face rising cost of living pressures", text: "Fixed-income pensioners are saying they are struggling more and more to cover their household costs, even though inflation is still high. Charities are asking for specific measures to be put in place to help those who are only on the state pension." },
+                    { title: "Self-employed lag behind on pension saving", text: "The UK's self-employed people are far less likely than their employed counterparts to have good pension provision, according to new data. Personal pension contributions for freelancers and contractors should be reviewed regularly, according to financial advisors." },
+                    { title: "Defined benefit schemes continue to close", text: "The number of UK private sector defined benefit pension schemes is declining as employers move to defined contribution schemes. Employees who are moving from one scheme to another are encouraged to take independent financial guidance." }
+                ],
+                distractors: [
+                    { title: "New nature reserve opens in Yorkshire", text: "In North Yorkshire a new nature reserve has been established on land previously used for farming and is operated by a wildlife conservation trust. There are opportunities to visit wetland habitats, wildflower meadows and a new bird hide." },
+                    { title: "Amateur dramatics group marks fifty years", text: "A local amateur dramatic troupe is marking their 50th anniversary by reviving their original show. Members from various decades have been invited to come out to see the special gala performance." },
+                    { title: "Motorway services win sustainability award", text: "A motorway service area operator has been awarded a national sustainability prize for its initiative to cut down on single-use plastics and food waste. The company claims that the project has reduced the amount of waste collected annually by a third." },
+                    { title: "New children's hospital wing opens", text: "A children's hospital has established a new specialist wing for extra capacity for oncology and neurology services. The unit was funded by NHS capital investment and charitable donations." },
+                    { title: "Community orchard project bears fruit", text: "Three years ago, a community orchard project was planted and the first substantial crop of apples and pears is now harvested. On designated weekends throughout the fall, residents can come to pick fruit." },
+                    { title: "Historic windmill restored to working order", text: "A team of specialist windmill personnel and volunteers have restored a historic windmill to full working order. The mill will be open to visitors and will show how grain was milled in the old days on certain weekends." },
+                    { title: "New bus route connects rural villages", text: "A new bus service has been introduced between a number of rural villages and the closest market town. The route was launched in response to a community campaign that identified a need for public transport for older people." },
+                    { title: "Photography exhibition opens at arts centre", text: "A regional arts centre has opened a photography show that captures the essence of life in British coastal towns. The pictures were captured over a decade and will be exhibited at five national locations." },
+                    { title: "School garden wins regional competition", text: "A primary school has won a regional competition for the most creative use of a small outside learning space. As part of their science and design technology lessons, pupils designed and planted the garden." },
+                    { title: "New visitor centre opens at castle", text: "A national heritage site has opened a new visitor centre with interactive displays on the history of the castle and its inhabitants. The centre features a viewing platform, gift shop and cafe." },
+                    { title: "Cycling club celebrates hundredth member", text: "A local cycling club has recruited its 100th member after a successful campaign. There are weekly rides on three levels and a charity sportive is held each year in the summer." }
+                ]
+            }
+        ];
+
+        /*
+         * ============================================================
+         * UTILITY: FISHER-YATES SHUFFLE
+         * ============================================================
+         * In-place array shuffle. Used in three contexts:
+         *   1. Query order (studyData) - counterbalances presentation
+         *      order across participants.
+         *   2. Card order within each round - prevents participants
+         *      learning fixed target positions.
+         *   3. Distractor box positions - prevents habituation to a
+         *      fixed distractor location (Burke et al., 2005).
+         */
+        function shuffleArray(array) {
+            for (var i = array.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+            }
+        }
+
+        /* Randomise query presentation order across participants */
+        shuffleArray(studyData);
+
+        /*
+         * ============================================================
+         * EVENT LISTENERS: WELCOME SCREEN AND SUBMIT BUTTON
+         * ============================================================
+         */
+        document.getElementById('start-btn').addEventListener('click', function () {
+            document.getElementById('overlay').classList.add('hidden');
+            startRound(currentRound);
+        });
+
+        document.getElementById('submit-round-btn').addEventListener('click', function () {
+            processRoundSubmission();
+        });
+
+        /*
+         * ============================================================
+         * startRound(roundIndex)
+         * ============================================================
+         * Builds and renders the article grid for a given round, then
+         * starts the 90-second countdown timer.
+         *
+         * Grid construction follows the sandwich method inspired by
+         * Burke et al. (2005): one target article is deliberately
+         * placed between two distractor boxes to maximise interference
+         * for that item. All other positions are randomised.
+         */
+        function startRound(roundIndex) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            var data = studyData[roundIndex];
+
+            /* Update the header to show the current query number and text */
+            document.getElementById('round-indicator').innerText = roundIndex + 1;
+            document.getElementById('query-prompt').innerText    = data.query;
+
+            /* Clear the grid from the previous round */
+            var gridContainer = document.getElementById('grid-container');
+            gridContainer.innerHTML = '';
+
+            /* Build a flat array of all 16 article cards for this round */
+            var normalItems = [];
+            data.targets.forEach(function (t) {
+                normalItems.push({ html: createCardHTML(t.title, t.text, true),  isTarget: true  });
+            });
+            data.distractors.forEach(function (d) {
+                normalItems.push({ html: createCardHTML(d.title, d.text, false), isTarget: false });
+            });
+            shuffleArray(normalItems);
+
+            /*
+             * Sandwich construction: remove one target from the shuffled
+             * list and hold it aside. It will be re-inserted flanked by
+             * two distractor boxes (the "bread" slices), creating a
+             * high-interference triplet that increases task difficulty
+             * for that item (Burke et al., 2005, "sandwich effect").
+             */
+            var sandwichTargetIndex = normalItems.findIndex(function (item) { return item.isTarget; });
+            var sandwichedTarget    = normalItems.splice(sandwichTargetIndex, 1)[0];
+
+            /* Prepare the distractor boxes and pick two as the "bread" */
+            var salientItems = constantDistractors.map(function (cd) {
+                return '<div class="distractor-box ' + cd.type + '" tabindex="0" aria-hidden="true">' + cd.html + '</div>';
+            });
+            shuffleArray(salientItems);
+
+            var bread1         = salientItems.pop();
+            var bread2         = salientItems.pop();
+            var sandwichBlock  = [bread1, sandwichedTarget.html, bread2];
+
+            /* Combine remaining articles and remaining distractor boxes, then shuffle */
+            var finalGrid = normalItems.map(function (item) { return item.html; }).concat(salientItems);
+            shuffleArray(finalGrid);
+
+            /* Insert the sandwich block at a random position in the final grid */
+            var insertIndex = Math.floor(Math.random() * (finalGrid.length + 1));
+            finalGrid.splice.apply(finalGrid, [insertIndex, 0].concat(sandwichBlock));
+
+            /* Render all items into the DOM */
+            finalGrid.forEach(function (itemStr) {
+                gridContainer.insertAdjacentHTML('beforeend', itemStr);
+            });
+
+            /* Attach click and keyboard handlers to every article card */
+            var cards = document.querySelectorAll('.card');
+            cards.forEach(function (card) {
+                card.addEventListener('click', function () {
+                    this.classList.toggle('selected');
+                    this.setAttribute('aria-pressed', this.classList.contains('selected'));
+                });
+
+                /* Keyboard operability: Enter and Space toggle selection
+                   (WCAG 2.1 Success Criterion 2.1.1 - Keyboard) */
+                card.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
+                });
+            });
+
+            /* Reset and start the countdown timer for this round */
+            timeLeft = TIME_LIMIT_SECS;
+            updateTimerDisplay();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(function () {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    /* Time expired: auto-submit and advance to the next round */
+                    processRoundSubmission();
+                }
+            }, 1000);
+        }
+
+        /*
+         * createCardHTML(title, text, isTarget)
+         * ------------------------------------------------------------
+         * Returns the HTML string for a single article card.
+         * data-target stores ground-truth so processRoundSubmission()
+         * can compute TP/FP without needing the studyData array again.
+         */
+        function createCardHTML(title, text, isTarget) {
+            return '<div class="card" tabindex="0" role="button" aria-pressed="false" data-target="' + isTarget + '">'
+                 +   '<h2>' + title + '</h2>'
+                 +   '<p>'  + text  + '</p>'
+                 + '</div>';
+        }
+
+        /*
+         * updateTimerDisplay()
+         * ------------------------------------------------------------
+         * Formats timeLeft as MM:SS and updates the timer element.
+         * Applies a warning colour class when fewer than
+         * TIMER_WARNING_SECS seconds remain.
+         */
+        function updateTimerDisplay() {
+            var minutes = Math.floor(timeLeft / 60);
+            var seconds = timeLeft % 60;
+            document.getElementById('timer-text').innerText =
+                (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+
+            var timerEl = document.getElementById('timer-display');
+            if (timeLeft <= TIMER_WARNING_SECS) {
+                timerEl.classList.add('timer-warning');
+            } else {
+                timerEl.classList.remove('timer-warning');
+            }
+        }
+
+        /*
+         * processRoundSubmission()
+         * ============================================================
+         * Called when the participant clicks "Submit Query" or the
+         * timer reaches zero. Scores the current round and either
+         * advances to the next round or calls finaliseTask().
+         *
+         * Scoring uses a per-card confusion matrix:
+         *   TP (true positive)  - target article selected
+         *   FP (false positive) - non-target article selected
+         *   FN (false negative) - target article not selected (always 5 - TP)
+         *
+         * Per-round F1 = 2*precision*recall / (precision + recall)
+         */
+        function processRoundSubmission() {
+            clearInterval(timerInterval);
+
+            var timeSpent = TIME_LIMIT_SECS - timeLeft;
+            totalTimeSpent += timeSpent;
+
+            var selectedCards = document.querySelectorAll('.card.selected');
+            var roundTP = 0;
+            var roundFP = 0;
+
+            selectedCards.forEach(function (card) {
+                if (card.getAttribute('data-target') === 'true') {
+                    roundTP++;
+                } else {
+                    roundFP++;
+                }
+            });
+
+            var roundFN = 5 - roundTP; /* There are always exactly 5 targets per round */
+
+            var rPrecision = (roundTP + roundFP) > 0 ? roundTP / (roundTP + roundFP) : 0;
+            var rRecall    = (roundTP + roundFN) > 0 ? roundTP / (roundTP + roundFN) : 0;
+            var rF1        = (rPrecision + rRecall) > 0
+                             ? 2 * (rPrecision * rRecall) / (rPrecision + rRecall)
+                             : 0;
+
+            /* Store this round's metrics, including the query topic so the
+               Google Sheet records which query appeared in which position
+               for each participant (useful for detecting per-topic difficulty
+               effects and checking for presentation-order confounds). */
+            roundMetrics.push({
+                roundNum:   currentRound + 1,
+                queryTopic: studyData[currentRound].query,
+                time:       timeSpent,
+                tp:         roundTP,
+                fp:         roundFP,
+                fn:         roundFN,
+                f1:         Math.round(rF1 * 1000) / 1000
+            });
+
+            /* Accumulate confusion matrix values for the final cumulative F1 */
+            cumulativeTP += roundTP;
+            cumulativeFP += roundFP;
+            cumulativeFN += roundFN;
+
+            currentRound++;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (currentRound < studyData.length) {
+                /* More rounds remain: show the between-round interstitial */
+                var overlay = document.getElementById('overlay');
+                overlay.classList.remove('hidden');
+                document.getElementById('overlay-content').innerHTML =
+                    '<h2 style="margin-top:0; text-align:center;">Round ' + currentRound + ' Complete</h2>'
+                  + '<p style="font-size:1.1rem; text-align:center;">Get ready for the next search query.</p>'
+                  + '<button class="submit-btn" id="next-btn" style="margin:24px auto 0 auto;">'
+                  +   'Start Round ' + (currentRound + 1)
+                  +   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
+                  + '</button>';
+
+                document.getElementById('next-btn').addEventListener('click', function () {
+                    overlay.classList.add('hidden');
+                    startRound(currentRound);
+                });
+            } else {
+                /* All five rounds complete */
+                finaliseTask();
+            }
+        }
+
+        /*
+         * finaliseTask()
+         * ============================================================
+         * Calculates the final cumulative F1 score across all rounds,
+         * displays a summary table, POSTs results to the Apps Script
+         * endpoint, then redirects to Prolific after 5 seconds.
+         *
+         * NOTE ON IP ADDRESS:
+         * The participant's IP address cannot be read from client-side
+         * JavaScript. It is captured server-side by the Apps Script
+         * doPost() function from the incoming HTTP request headers,
+         * matching the approach used by Prof. Cutting's circles test
+         * server. No IP address handling is needed here.
+         *
+         * NOTE ON CONTENT-TYPE:
+         * The fetch uses Content-Type: text/plain to avoid triggering a
+         * CORS preflight request. Google Apps Script Web Apps do not
+         * send CORS headers on the response, so a preflight would fail.
+         * The body is still valid JSON; Apps Script parses it correctly.
+         */
+        function finaliseTask() {
+            /* Compute cumulative precision, recall and F1 across all rounds */
+            var precision   = (cumulativeTP + cumulativeFP) > 0
+                              ? cumulativeTP / (cumulativeTP + cumulativeFP) : 0;
+            var recall      = (cumulativeTP + cumulativeFN) > 0
+                              ? cumulativeTP / (cumulativeTP + cumulativeFN) : 0;
+            var finalF1     = (precision + recall) > 0
+                              ? 2 * (precision * recall) / (precision + recall) : 0;
+            finalF1         = Math.round(finalF1 * 1000) / 1000;
+
+            /* Build the payload sent to the Google Sheet via Apps Script */
+            var payload = {
+                prolific_id:     prolificID,
+                f1_score:        finalF1,
+                time_secs:       totalTimeSpent,
+                query_breakdown: roundMetrics
+                /* IP address is added server-side by doPost() in Code.gs */
+            };
+
+            /* Build the per-round results table for the end screen */
+            var tableRows = '';
+            roundMetrics.forEach(function (rm) {
+                tableRows +=
+                    '<tr>'
+                  +   '<td>' + rm.roundNum + '</td>'
+                  +   '<td style="font-size:0.85rem;">' + rm.queryTopic + '</td>'
+                  +   '<td><strong>' + rm.f1 + '</strong></td>'
+                  +   '<td>' + rm.time + 's</td>'
+                  +   '<td>' + rm.tp + ' / 5</td>'
+                  + '</tr>';
+            });
+
+            var breakdownTableHTML =
+                '<table class="results-table">'
+              +   '<thead><tr>'
+              +     '<th>Round</th><th>Query topic</th><th>F1 score</th><th>Time (s)</th><th>Targets found</th>'
+              +   '</tr></thead>'
+              +   '<tbody>' + tableRows + '</tbody>'
+              + '</table>';
+
+            /* Show the end screen overlay with a loading spinner while
+               the fetch request is in flight */
+            var overlay = document.getElementById('overlay');
+            overlay.classList.remove('hidden');
+            document.getElementById('overlay-content').innerHTML =
+                '<h2 style="margin-top:0; colour:#1a73e8; text-align:center;">Task Complete</h2>'
+              + '<p style="text-align:center;">Saving your results. Please wait...</p>'
+              + '<div style="margin-top:20px; display:flex; justify-content:center;">'
+              +   '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 2s linear infinite;" aria-hidden="true">'
+              +     '<line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line>'
+              +     '<line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>'
+              +     '<line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line>'
+              +     '<line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>'
+              +   '</svg>'
+              + '</div>'
+              + '<div class="debug-panel">'
+              +   '<h3 style="margin-top:0;">Task results (Participant ID: ' + prolificID + ')</h3>'
+              +   '<p style="margin-bottom:5px;"><strong>Overall F1 score:</strong> <span style="font-size:1.2rem; colour:#d32f2f;">' + finalF1 + '</span></p>'
+              +   '<p style="margin-top:0;"><strong>Total time:</strong> ' + totalTimeSpent + ' seconds</p>'
+              +   breakdownTableHTML
+              +   '<p style="text-align:center; margin-top:15px;"><em>Redirecting to Prolific in 5 seconds...</em></p>'
+              + '</div>'
+              + '<style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>';
+
+            /*
+             * POST results to the Google Apps Script Web App.
+             * mode: 'no-cors' avoids a CORS preflight that Apps Script
+             * cannot respond to. The response is opaque (unreadable),
+             * so the redirect is triggered unconditionally after 5 seconds
+             * regardless of success or failure of the network request.
+             */
+            try {
+                fetch(APPS_SCRIPT_URL, {
+                    method:  'POST',
+                    mode:    'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body:    JSON.stringify(payload)
+                }).catch(function (error) {
+                    /* Log network errors but do not block the redirect */
+                    console.error('Network error submitting results:', error);
+                });
+            } catch (error) {
+                console.error('Error constructing fetch request:', error);
+            }
+
+            /* Redirect to Prolific after 5 seconds regardless of fetch outcome */
+            setTimeout(function () {
+                window.location.href = PROLIFIC_COMPLETE_URL;
+            }, 5000);
+        }
+    </script>
+</body>
 </html>

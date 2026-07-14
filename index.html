@@ -643,18 +643,34 @@
 
         /*
          * ============================================================
-         * PROLIFIC ID EXTRACTION
+         * URL PARAMETER EXTRACTION
          * ============================================================
-         * Prof. Cutting's circles test server has a known bug that
-         * occasionally drops the first character of the outgoing URL
-         * parameter name, producing "rolific_ID" instead of
-         * "prolific_ID". Both variants are checked as a defensive
-         * measure to ensure no participant's ID is lost.
+         * Two values are read from the incoming URL on page load:
+         *
+         * 1. PROLIFIC ID
+         *    Prof. Cutting's circles test server has a known bug that
+         *    occasionally drops the first character of the outgoing URL
+         *    parameter name, producing "rolific_ID" instead of
+         *    "prolific_ID". His server also sends the parameter in
+         *    uppercase as "PROLIFIC_ID" in some configurations.
+         *    All three variants are checked defensively.
+         *
+         * 2. WM ID (Professor Cutting's database ID)
+         *    His server appends a WMID parameter to the redirect URL,
+         *    e.g. ?WMID=1442&id=1442. This is the key that links a
+         *    participant's circles test record in his database to their
+         *    row in our Google Sheet - captured here as a second
+         *    linking variable alongside the Prolific ID.
          */
         const urlParams  = new URLSearchParams(window.location.search);
         const prolificID = urlParams.get('prolific_ID')
                         || urlParams.get('rolific_ID')
+                        || urlParams.get('PROLIFIC_ID')
                         || 'UNKNOWN_OR_MISSING_ID';
+
+        /* WMID from Prof. Cutting's server - falls back to 'id' parameter
+           which carries the same value in the observed redirect URL */
+        const wmID = urlParams.get('WMID') || urlParams.get('id') || '';
 
         /*
          * ============================================================
@@ -1167,10 +1183,10 @@
             /* Build the payload sent to the Google Sheet via Apps Script */
             var payload = {
                 prolific_id:     prolificID,
+                wm_id:           wmID,           /* Prof. Cutting's database ID for this participant */
                 f1_score:        finalF1,
                 time_secs:       totalTimeSpent,
                 query_breakdown: roundMetrics
-                /* IP address is added server-side by doPost() in Code.gs */
             };
 
             /* Build the per-round results table for the end screen */
@@ -1211,6 +1227,7 @@
               + '</div>'
               + '<div class="debug-panel">'
               +   '<h3 style="margin-top:0;">Task results (Participant ID: ' + prolificID + ')</h3>'
+              +   '<p style="margin-bottom:3px;"><strong>WM ID (circles test):</strong> ' + (wmID || 'Not captured') + '</p>'
               +   '<p style="margin-bottom:5px;"><strong>Overall F1 score:</strong> <span style="font-size:1.2rem; colour:#d32f2f;">' + finalF1 + '</span></p>'
               +   '<p style="margin-top:0;"><strong>Total time:</strong> ' + totalTimeSpent + ' seconds</p>'
               +   breakdownTableHTML

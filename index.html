@@ -1,63 +1,79 @@
 <!DOCTYPE html>
-<html lang="en-GB" data-theme="dark">
+<html lang="en-GB" data-theme="light">
+<!--
+    ================================================================
+    NEWS ARTICLE SEARCH TASK
+    ================================================================
+    University of York MSc dissertation:
+    "Distraction Resistance and Complex User Interfaces"
+    Project reference: jtc511.008
+    Supervised by Professor Joe Cutting
+
+    DO NOT alter any article titles or abstracts without first
+    obtaining an ethics amendment from the University of York
+    Physical Sciences Ethics Committee (approved 24 June 2026).
+    ================================================================
+-->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>News Article Search Task</title>
 
     <!--
-        Theme initialisation: runs before the page paints to prevent a flash
-        of the wrong colour scheme. Reads the participant's OS preference and
-        applies the matching data-theme attribute to the root element.
+        IMPORTANT - WHY data-theme="light" IS SET ON THE <html> TAG:
+        The theme is fixed directly on the root element rather than set
+        by a script on page load. This prevents any flash of the wrong
+        colour scheme before the script runs, which was causing a
+        brief visible flicker on page load. All participants see the
+        light theme to ensure identical visual conditions across the
+        study. The dark theme CSS is retained below for future use
+        but is not activated during data collection.
     -->
-    <script>
-        (function () {
-            var preferLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-            document.documentElement.setAttribute('data-theme', preferLight ? 'light' : 'dark');
-        })();
-    </script>
 
     <style>
         /*
          * ============================================================
-         * CSS CUSTOM PROPERTIES - COLOUR TOKENS
+         * COLOUR TOKENS (CSS CUSTOM PROPERTIES)
          * ============================================================
-         * All colours are defined here as custom properties so that
-         * switching between the light and dark themes requires only a
-         * single attribute change on the root element. Every component
-         * below references these tokens rather than hard-coded values.
+         * All colours are defined here so that swapping between light
+         * and dark themes only requires a single attribute change on
+         * the root <html> element. Every component below references
+         * these tokens rather than hard-coded colour values.
          *
-         * Contrast ratios have been verified against WCAG 2.1 AA:
-         * - Body text:  minimum 4.5:1 against its background
-         * - UI components and large text: minimum 3:1
+         * Contrast ratios meet WCAG 2.1 Level AA:
+         *   - Body text:            minimum 4.5:1 against its background
+         *   - Large text and icons: minimum 3:1
          */
 
+        /* --- Light theme (active during data collection) --- */
         :root {
-            /* --- Surface colours --- */
+            /* Page and card backgrounds */
             --bg-colour:      #f4f5f7;
             --card-bg:        #ffffff;
             --header-bg:      #ffffff;
 
-            /* --- Border colours --- */
+            /* Borders */
             --card-border:    #e0e0e0;
             --header-border:  #dddddd;
 
-            /* --- Text colours --- */
+            /* Text */
             --text-main:      #111111;
             --text-muted:     #555555;
 
-            /* --- Interactive / brand colour --- */
-            --link-colour:    #1a0dab; /* Traditional hyperlink blue, familiar from real news sites */
+            /* Hyperlink blue - familiar from real news portals */
+            --link-colour:    #1a0dab;
 
-            /* --- Card selected state --- */
+            /* Card selected state */
             --selected-bg:    #e8f0fe;
             --selected-border:#1a73e8;
             --selected-text:  #0d47a1;
 
-            /* --- Distractor / sponsored box colours ---
-               High salience is deliberate: these boxes are the peripheral
-               visual distractors that drive attentional suppression in the
-               VWM distraction-resistance paradigm. */
+            /*
+             * Distractor box colours - high salience is intentional.
+             * These boxes are the peripheral visual distractors that
+             * operationalise the attentional suppression manipulation.
+             * They are not an accessibility oversight.
+             */
             --distractor-yellow: #FFEB3B;
             --distractor-pink:   #C2185B;
             --distractor-cyan:   #00BCD4;
@@ -65,7 +81,11 @@
             --distractor-border: rgba(0, 0, 0, 0.8);
         }
 
-        /* Dark theme overrides - same tokens, different values */
+        /*
+         * --- Dark theme (retained for future use, not active during study) ---
+         * To re-enable: change data-theme="light" to data-theme="dark"
+         * on the <html> tag, or call applyTheme('dark') in the script.
+         */
         [data-theme="dark"] {
             --bg-colour:      #121212;
             --card-bg:        #1e1e1e;
@@ -83,7 +103,6 @@
             --selected-border:#4da6ff;
             --selected-text:  #99ccff;
 
-            /* Distractor colours remain visually salient in dark mode */
             --distractor-yellow: #FBC02D;
             --distractor-pink:   #D81B60;
             --distractor-cyan:   #00ACC1;
@@ -93,7 +112,7 @@
 
         /*
          * ============================================================
-         * GLOBAL RESET & BASE STYLES
+         * GLOBAL RESET AND BASE STYLES
          * ============================================================
          */
         * { box-sizing: border-box; }
@@ -105,19 +124,22 @@
             margin: 0;
             padding: 0;
             line-height: 1.6;
-            /* Unrestricted cursor movement is intentional: restricting mouse
-               movement during visual search causes usability failures
-               (Burke et al., 2005). */
+            /*
+             * Unrestricted cursor movement is intentional. Restricting
+             * mouse movement during visual search causes usability
+             * failures (Burke et al., 2005).
+             */
             cursor: default;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /*
          * ============================================================
-         * HEADER
+         * STICKY HEADER
          * ============================================================
-         * Sticky so the search query and timer remain visible while the
-         * participant scrolls through the article grid.
+         * Remains fixed at the top of the viewport while the
+         * participant scrolls through the article grid, ensuring the
+         * search query and timer are always visible.
          */
         header {
             background-color: var(--header-bg);
@@ -133,9 +155,10 @@
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
-        .task-instructions { max-width: 60%; }
+        /* Left side of header: round label and query text */
+        .header-query-section { max-width: 65%; }
 
-        .task-instructions h1 {
+        .header-query-section h1 {
             font-size: 1.1rem;
             margin: 0 0 4px 0;
             color: #d32f2f;
@@ -144,15 +167,19 @@
             gap: 8px;
         }
 
-        [data-theme="dark"] .task-instructions h1 { color: #ff5252; }
+        [data-theme="dark"] .header-query-section h1 { color: #ff5252; }
 
-        .task-instructions p {
-            font-size: 1.15rem;
-            font-weight: 600;
+        /* Query text - enlarged for visibility (WCAG, M8 recommendation) */
+        .header-query-section p {
+            font-size: 1.3rem;
+            font-weight: 700;
             margin: 0;
+            color: var(--text-main);
+            line-height: 1.4;
         }
 
-        .task-controls {
+        /* Right side of header: timer and submission button */
+        .header-controls {
             display: flex;
             align-items: center;
             gap: 15px;
@@ -164,7 +191,11 @@
          * ============================================================
          */
 
-        /* Small circular icon button (theme toggle) */
+        /*
+         * Theme toggle button - commented out in the HTML below.
+         * CSS is retained so nothing breaks if it is re-enabled.
+         * During the study, all participants use the light theme.
+         */
         .icon-btn {
             background: none;
             border: 2px solid var(--card-border);
@@ -187,20 +218,9 @@
             outline-offset: 2px;
         }
 
-        /* Active state for light/dark selector buttons on the welcome screen */
-        .theme-selector-btn.active {
-            border-color: #1a73e8;
-            background-color: rgba(26, 115, 232, 0.1);
-            color: #1a73e8;
-        }
-        [data-theme="dark"] .theme-selector-btn.active {
-            border-color: #4da6ff;
-            background-color: rgba(77, 166, 255, 0.15);
-            color: #4da6ff;
-        }
-
-        /* Primary action button (submit, start, next) */
-        button.submit-btn {
+        /* Primary action button (Start, Next round, Found them all) */
+        button.submit-btn,
+        a.submit-btn {
             background-color: #1a73e8;
             color: white;
             border: none;
@@ -213,17 +233,21 @@
             align-items: center;
             gap: 8px;
             transition: background-color 0.2s ease, transform 0.1s ease;
-            min-height: 44px; /* WCAG 2.1 minimum touch target size */
+            min-height: 44px; /* WCAG 2.1 minimum touch-target size */
+            text-decoration: none;
         }
 
-        button.submit-btn:hover {
+        button.submit-btn:hover,
+        a.submit-btn:hover {
             background-color: #1557b0;
             transform: translateY(-1px);
         }
 
-        button.submit-btn:active { transform: translateY(0); }
+        button.submit-btn:active,
+        a.submit-btn:active { transform: translateY(0); }
 
-        button.submit-btn:focus-visible {
+        button.submit-btn:focus-visible,
+        a.submit-btn:focus-visible {
             outline: 3px solid #1a73e8;
             outline-offset: 2px;
         }
@@ -233,7 +257,7 @@
          * COUNTDOWN TIMER
          * ============================================================
          */
-        .timer {
+        .countdown-timer {
             font-size: 1.2rem;
             font-weight: bold;
             background-color: #333;
@@ -244,23 +268,24 @@
             align-items: center;
             gap: 8px;
             letter-spacing: 1px;
-            /* aria-live="polite" on this element means a screen reader
-               will announce updates without interrupting other speech */
+            /*
+             * aria-live="polite" on this element means a screen reader
+             * announces time updates without interrupting other speech.
+             */
         }
 
-        [data-theme="dark"] .timer { background-color: #444; }
+        [data-theme="dark"] .countdown-timer { background-color: #444; }
 
-        /* Warning state: timer turns red in the final 15 seconds */
-        .timer.timer-warning { background-color: #c62828; }
+        /* Timer turns red in the final 15 seconds */
+        .countdown-timer.timer-warning { background-color: #c62828; }
 
         /*
          * ============================================================
-         * ARTICLE GRID LAYOUT
+         * ARTICLE GRID
          * ============================================================
          * auto-fill with a 280px minimum column width lets the grid
-         * expand to use available screen space on wider monitors,
-         * reducing the need to scroll and giving the visual clutter
-         * a more realistic news-site density.
+         * expand on wider monitors, giving the page a realistic
+         * news-portal density without requiring excessive scrolling.
          */
         main {
             padding: 30px;
@@ -275,13 +300,12 @@
          * ============================================================
          * ARTICLE CARDS
          * ============================================================
-         * Cards are the primary interactive elements. Full headline and
-         * abstract are always visible - never truncated - so participants
-         * cannot judge relevance from the headline alone (this prevents
-         * the "cognitively lazy" skimming strategy identified as a
-         * confound in Sutcliffe, Ennis & Hu, 2000).
+         * Full headline and abstract are always visible and never
+         * truncated. This prevents participants from judging relevance
+         * from the headline alone, which would allow a skimming
+         * shortcut identified as a confound in Sutcliffe et al. (2000).
          */
-        .card {
+        .article-card {
             background-color: var(--card-bg);
             border: 2px solid var(--card-border);
             border-radius: 8px;
@@ -297,20 +321,20 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-        .card:hover {
+        .article-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
             border-color: #a0a0a0;
         }
 
-        .card:focus-visible {
+        .article-card:focus-visible {
             outline: 3px solid #1a73e8;
             outline-offset: 2px;
             transform: translateY(-3px);
         }
 
         /* Headline styled as a hyperlink to mimic a real news portal */
-        .card h2 {
+        .article-card h2 {
             font-size: 1.1rem;
             margin: 0 0 12px 0;
             line-height: 1.35;
@@ -319,40 +343,39 @@
             text-underline-offset: 2px;
         }
 
-        .card p {
+        .article-card p {
             font-size: 0.95rem;
             margin: 0;
             color: var(--text-muted);
         }
 
         /*
-         * Selected state: colour change plus a checkmark icon (added via
-         * JavaScript) so that selection is not conveyed by colour alone
-         * (WCAG 2.1 Success Criterion 1.4.1 - Use of Colour).
+         * Selected state: colour change AND a visual border highlight,
+         * so selection is never conveyed by colour alone.
+         * (WCAG 2.1 Success Criterion 1.4.1 - Use of Colour)
          */
-        .card.selected {
+        .article-card.selected {
             background-color: var(--selected-bg);
             border-color: var(--selected-border);
             box-shadow: inset 0 0 0 1px var(--selected-border);
             transform: translateY(0);
         }
 
-        .card.selected h2,
-        .card.selected p { color: var(--selected-text); text-decoration: none; }
+        .article-card.selected h2,
+        .article-card.selected p {
+            color: var(--selected-text);
+            text-decoration: none;
+        }
 
         /*
          * ============================================================
-         * DISTRACTOR / SPONSORED BOXES
+         * DISTRACTOR BOXES (sponsored and trending)
          * ============================================================
-         * These are peripheral visual distractors that require attentional
-         * suppression, directly operationalising the visual clutter
-         * manipulation. High-salience colours are intentional design
-         * choices, not accessibility oversights - the boxes are not
-         * interactive and contain no meaningful information for the task.
-         *
-         * The floating animation increases salience and draws involuntary
-         * attention, increasing cognitive load as predicted by the
-         * distractor interference literature (Burke et al., 2005).
+         * These are the peripheral visual distractors. High-salience
+         * colours and animation are deliberate experimental choices -
+         * they operationalise the attentional suppression manipulation
+         * and increase cognitive load (Burke et al., 2005).
+         * They are not interactive and carry no task-relevant content.
          */
         @keyframes distractor-float {
             0%   { transform: translateY(0);    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); }
@@ -360,7 +383,7 @@
             100% { transform: translateY(0);    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); }
         }
 
-        @keyframes attention-shake {
+        @keyframes distractor-icon-shake {
             0%,  100% { transform: rotate(0deg); }
             25%        { transform: rotate(10deg); }
             75%        { transform: rotate(-10deg); }
@@ -375,18 +398,18 @@
             animation: distractor-float 5s infinite ease-in-out;
         }
 
-        /* Staggered animation delays so boxes do not float in unison */
-        .sponsored-1 { animation-delay: 0s; }
-        .sponsored-2 { animation-delay: -1.5s; }
-        .sponsored-3 { animation-delay: -3s; }
-        .trending-box { animation-delay: -4.5s; }
+        /* Staggered delays so the boxes do not rise and fall in unison */
+        .sponsored-1  { animation-delay:  0s;    }
+        .sponsored-2  { animation-delay: -1.5s;  }
+        .sponsored-3  { animation-delay: -3s;    }
+        .trending-box { animation-delay: -4.5s;  }
 
         .distractor-box:focus-visible {
             outline: 3px solid var(--text-main);
             outline-offset: 2px;
         }
 
-        .distractor-tag {
+        .distractor-label {
             font-size: 0.75rem;
             font-weight: 800;
             text-transform: uppercase;
@@ -398,9 +421,10 @@
             opacity: 0.9;
         }
 
-        .distractor-tag svg { animation: attention-shake 3s infinite ease-in-out; }
+        /* The icon inside the label shakes to attract attention */
+        .distractor-label svg { animation: distractor-icon-shake 3s infinite ease-in-out; }
 
-        /* Each sponsored box has a distinct colour to maximise visual variety */
+        /* Each sponsored box uses a distinct colour to maximise visual variety */
         .sponsored-1  { background-color: var(--distractor-yellow); color: #000000; border: 3px solid var(--distractor-border); }
         .sponsored-2  { background-color: var(--distractor-pink);   color: #ffffff; border: 3px solid var(--distractor-border); }
         .sponsored-3  { background-color: var(--distractor-cyan);   color: #000000; border: 3px solid var(--distractor-border); }
@@ -424,10 +448,14 @@
 
         /*
          * ============================================================
-         * OVERLAY (welcome screen, between-round screen, end screen)
+         * OVERLAY PANEL
          * ============================================================
+         * Full-screen panel used for three screens:
+         *   1. Welcome / instructions (shown on page load)
+         *   2. Between-round interstitial ("Round N complete")
+         *   3. End screen / debrief ("All done - thank you")
          */
-        #overlay {
+        #overlay-backdrop {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
@@ -443,7 +471,7 @@
             padding: 20px;
         }
 
-        #overlay-content {
+        #overlay-card {
             text-align: left;
             max-width: 650px;
             width: 100%;
@@ -455,311 +483,409 @@
             margin: auto;
         }
 
+        /* Utility class - hides any element completely */
         .hidden { display: none !important; }
 
+        /* Prevent SVG icons from shrinking inside flex containers */
         svg { flex-shrink: 0; }
 
         /*
          * ============================================================
-         * RESULTS TABLE (end screen)
+         * QUERY PREVIEW BOX
          * ============================================================
-         * Shown on the end screen so the researcher can verify scores
-         * are correct during testing. Not shown to real participants
-         * because the overlay is replaced by the redirect countdown.
+         * Displays the upcoming search query on the welcome screen and
+         * between-round screens before the article grid is shown.
+         * Forces participants to register the query before visual
+         * clutter appears (M8 - Enhance Prompt Visibility).
          */
-        .debug-panel {
-            margin-top: 24px;
-            font-size: 0.95rem;
-            color: var(--text-main);
-            background: var(--bg-colour);
-            padding: 20px;
+        .query-preview-box {
+            background-color: #e8f0fe;
+            border: 2px solid #1a73e8;
             border-radius: 8px;
-            border: 1px solid var(--card-border);
-        }
-
-        .results-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            margin-bottom: 15px;
-        }
-
-        .results-table th,
-        .results-table td {
-            border: 1px solid var(--card-border);
-            padding: 8px 12px;
+            padding: 16px 20px;
+            margin: 20px 0;
             text-align: left;
         }
 
-        .results-table th {
-            background-color: rgba(0, 0, 0, 0.05);
-            font-weight: bold;
+        .query-preview-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1557b0;
+            margin-bottom: 6px;
         }
 
-        [data-theme="dark"] .results-table th {
-            background-color: rgba(255, 255, 255, 0.05);
+        .query-preview-text {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0d3a8c;
+            margin: 0;
+            line-height: 1.45;
         }
+
     </style>
 </head>
 <body>
 
     <!--
-        OVERLAY
-        Covers the full viewport. Used for:
-          1. Welcome / instructions screen (shown on page load)
-          2. Between-round interstitial ("Round N complete, get ready...")
-          3. End screen ("Task complete, saving results...")
+        ================================================================
+        OVERLAY PANEL
+        ================================================================
+        Covers the full viewport. Reused for:
+          1. Welcome screen       - shown immediately on page load
+          2. Between-round screen - "Round N complete, get ready..."
+          3. End / debrief screen - "All done, thank you!"
+        The inner card (#overlay-card) is replaced by JavaScript for
+        screens 2 and 3.
     -->
-    <div id="overlay">
-        <div id="overlay-content">
-            <h2 style="margin-top:0; color:#1a73e8; text-align:center;">News Article Search Task</h2>
+    <div id="overlay-backdrop">
+        <div id="overlay-card">
+
+            <h2 style="margin-top:0; color:#1a73e8; text-align:center;">
+                News Article Search Task
+            </h2>
 
             <p style="text-align:center;">
-                You will have <strong>90 seconds</strong> to find and click on all
-                <strong>relevant articles</strong> based on the search topic provided.
+                You will have <strong>90 seconds</strong> per round to find and click
+                on all the <strong>relevant articles</strong> based on the search
+                topic shown below.
             </p>
 
-            <!-- Theme selection: presented before the task begins so the
-                 participant's chosen theme is applied before they see any
-                 article content. -->
-            <div style="margin:24px auto; padding:15px; background:var(--bg-colour); border-radius:8px; max-width:320px; text-align:center;">
-                <p style="margin:0 0 12px 0; font-size:0.95rem; font-weight:bold;">Select reading theme:</p>
+            <p style="text-align:center; font-size:0.95rem; color:var(--text-muted);">
+                Read your first search query carefully before you start:
+            </p>
+
+            <!--
+                Query preview: populated by JavaScript once the study data
+                has been shuffled, so participants see their actual Round 1
+                query here before any articles appear.
+            -->
+            <div class="query-preview-box">
+                <div class="query-preview-label">Your search query</div>
+                <p class="query-preview-text" id="welcome-screen-query">Loading...</p>
+            </div>
+
+            <p style="text-align:center; font-size:0.95rem; color:var(--text-muted); margin-bottom:20px;">
+                The articles will appear <strong>2 seconds</strong> after you click
+                Start &mdash; use that moment to keep the query in mind.
+            </p>
+
+            <!--
+                Theme selector buttons - commented out for study consistency.
+                All participants use the light theme to remove theme as a
+                confounding variable. Retained here in case piloting reveals
+                a need to re-enable participant choice.
+
+            <div style="margin:24px auto; padding:15px; background:var(--bg-colour);
+                        border-radius:8px; max-width:320px; text-align:center;">
+                <p style="margin:0 0 12px 0; font-size:0.95rem; font-weight:bold;">
+                    Select reading theme:
+                </p>
                 <div style="display:flex; justify-content:center; gap:10px;">
-                    <button id="start-light-btn" class="icon-btn theme-selector-btn" style="width:auto; padding:8px 16px; border-radius:20px; font-size:0.95rem; gap:6px;">
-                        <!-- Sun icon -->
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                        </svg>
-                        Light
+                    <button id="welcome-light-btn" class="icon-btn"
+                            style="width:auto; padding:8px 16px; border-radius:20px;
+                                   font-size:0.95rem; gap:6px;">
+                        &#9728; Light
                     </button>
-                    <button id="start-dark-btn" class="icon-btn theme-selector-btn" style="width:auto; padding:8px 16px; border-radius:20px; font-size:0.95rem; gap:6px;">
-                        <!-- Moon icon -->
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
-                        Dark
+                    <button id="welcome-dark-btn" class="icon-btn"
+                            style="width:auto; padding:8px 16px; border-radius:20px;
+                                   font-size:0.95rem; gap:6px;">
+                        &#9790; Dark
                     </button>
                 </div>
             </div>
+            -->
 
-            <button class="submit-btn" id="start-btn" style="margin:0 auto;">
+            <button class="submit-btn" id="start-task-btn" style="margin:0 auto;">
                 Start Round 1
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
             </button>
-        </div>
-    </div>
 
-    <!-- STICKY HEADER: query text and controls remain visible while scrolling -->
+        </div>
+    </div><!-- end #overlay-backdrop -->
+
+
+    <!--
+        ================================================================
+        STICKY HEADER
+        ================================================================
+        Remains visible while the participant scrolls the article grid.
+        Shows: current query number, query text, countdown timer,
+        and the "I've Found Them All" submission button.
+
+        Theme toggle button has been commented out. All participants
+        use the light theme during data collection (M8 - Standardise
+        Theme). The button HTML and supporting CSS are retained so
+        it can be re-enabled after the study if required.
+    -->
     <header>
-        <div class="task-instructions">
+        <div class="header-query-section">
             <h1>
-                <!-- Search icon -->
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <!-- Magnifying glass icon -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                Query <span id="round-indicator">1</span> of 5
+                Query <span id="current-round-number">1</span> of 5
             </h1>
-            <!-- The current search topic is injected here by startRound() -->
-            <p id="query-prompt">Loading...</p>
+            <!-- Current round's search query - injected by startRound() -->
+            <p id="current-query-text">Loading...</p>
         </div>
 
-        <div class="task-controls">
-            <!-- Theme toggle: available during the task as well as on the welcome screen -->
-            <button class="icon-btn" id="theme-toggle" aria-label="Toggle between light and dark mode" title="Toggle theme">
-                <svg id="theme-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <div class="header-controls">
+
+            <!--
+                Theme toggle button - commented out during data collection.
+                All participants see the light theme. Uncomment to restore
+                the ability to switch between light and dark mid-task.
+
+            <button class="icon-btn" id="theme-toggle-btn"
+                    aria-label="Toggle between light and dark theme"
+                    title="Toggle theme">
+                <svg id="theme-toggle-icon" width="22" height="22"
+                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" aria-hidden="true">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 </svg>
             </button>
+            -->
 
-            <!-- aria-live="polite" ensures a screen reader announces timer updates
-                 without interrupting any ongoing speech -->
-            <div class="timer" id="timer-display" aria-live="polite" aria-label="Time remaining">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!--
+                Countdown timer.
+                aria-live="polite" announces updates to screen readers
+                without interrupting any ongoing speech.
+            -->
+            <div class="countdown-timer" id="timer-display"
+                 aria-live="polite" aria-label="Time remaining">
+                <!-- Clock icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
                 <span id="timer-text">01:30</span>
             </div>
 
-            <button class="submit-btn" id="submit-round-btn">
-                Submit Query
-                <!-- Tick icon - reinforces that clicking submits the current selection -->
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- Submission button - renamed from "Submit Query" (M8) -->
+            <button class="submit-btn" id="found-all-btn">
+                I've Found Them All
+                <!-- Tick icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
             </button>
+
         </div>
     </header>
 
-    <!-- ARTICLE GRID: populated dynamically by startRound() -->
-    <main id="grid-container" aria-label="Article grid - click cards to select relevant articles"></main>
+    <!--
+        ARTICLE GRID
+        Populated dynamically by startRound(). Cards are injected here
+        by JavaScript at the start of each round.
+    -->
+    <main id="article-grid"
+          aria-label="Article grid - click cards to select relevant articles">
+    </main>
+
 
     <script>
         /*
          * ============================================================
-         * CONFIGURATION
+         * STUDY CONFIGURATION
          * ============================================================
-         * APPS_SCRIPT_URL: the Web App URL from your Google Apps Script
-         *   deployment. Results are POSTed here at the end of the task.
+         * APPS_SCRIPT_URL      - Web App URL from the Google Apps Script
+         *                        deployment. Results are POSTed here when
+         *                        all five rounds are complete.
          *
-         * PROLIFIC_COMPLETE_URL: the Prolific completion link for your
-         *   study. Replace YOUR_PROLIFIC_COMPLETION_CODE with the actual
-         *   code shown in your Prolific study dashboard.
+         * PROLIFIC_COMPLETE_URL - Prolific completion link for the study.
          *
-         * TIME_LIMIT_SECS: duration of each individual search round.
-         *   Set to 90 seconds as specified in the ethics submission.
+         * ROUND_TIME_LIMIT_SECS - Duration of each search round (90s as
+         *                        specified in the ethics submission).
+         *
+         * TIMER_WARNING_SECS   - Timer turns red below this threshold.
          */
-        const APPS_SCRIPT_URL      = 'https://script.google.com/macros/s/AKfycbx_u8Zn-KPg1RCdRzBWKcHx-o-0IlCmng81ClW_A28ne5-m4P51llyJLTILWBpr3vU2/exec';
+        const APPS_SCRIPT_URL       = 'https://script.google.com/macros/s/AKfycbx_u8Zn-KPg1RCdRzBWKcHx-o-0IlCmng81ClW_A28ne5-m4P51llyJLTILWBpr3vU2/exec';
         const PROLIFIC_COMPLETE_URL = 'https://app.prolific.com/submissions/complete?cc=C1OI03FF';
-        const TIME_LIMIT_SECS      = 90;
-        const TIMER_WARNING_SECS   = 15; /* Timer turns red below this threshold */
+        const ROUND_TIME_LIMIT_SECS = 90;
+        const TIMER_WARNING_SECS    = 15;
 
         /*
          * ============================================================
-         * STATE VARIABLES
+         * SESSION STATE
          * ============================================================
-         * These track the participant's progress through the five rounds.
+         * These variables track progress through the five rounds.
          */
-        let currentRound   = 0;   /* Index into studyData (0-4) */
-        let timerInterval  = null; /* Reference to the active setInterval, used to clear it */
-        let timeLeft       = TIME_LIMIT_SECS;
-        let totalTimeSpent = 0;   /* Cumulative seconds across all rounds */
+        let currentRoundIndex = 0;    /* Index into studyRounds[] (0 to 4)          */
+        let countdownInterval = null; /* Reference to setInterval - needed to cancel */
+        let secondsRemaining  = ROUND_TIME_LIMIT_SECS;
+        let totalSecondsUsed  = 0;    /* Cumulative time across all five rounds       */
 
-        /* Running confusion-matrix tallies for the final cumulative F1 calculation */
-        let cumulativeTP = 0; /* True positives  - correct articles selected */
-        let cumulativeFP = 0; /* False positives - incorrect articles selected */
-        let cumulativeFN = 0; /* False negatives - correct articles missed */
+        /*
+         * Confusion-matrix running totals for the final cumulative F1.
+         *   truePositives  - target articles correctly selected
+         *   falsePositives - non-target articles incorrectly selected
+         *   falseNegatives - target articles missed (not selected)
+         */
+        let truePositives  = 0;
+        let falsePositives = 0;
+        let falseNegatives = 0;
 
-        /* Per-round metrics array, built up as each round is submitted */
-        let roundMetrics = [];
+        /* Per-round results, built up as each round is submitted */
+        let allRoundResults = [];
+
+        /*
+         * Whether the participant scrolled the page during the current
+         * round. Reset to false at the start of each round and set to
+         * true on the first scroll event. Used as evidence that cards
+         * below the fold were visible to the participant (M8).
+         */
+        let participantScrolledThisRound = false;
 
         /*
          * ============================================================
          * URL PARAMETER EXTRACTION
          * ============================================================
-         * Two values are read from the incoming URL on page load:
+         * Two identifiers are read from the URL on page load:
          *
          * 1. PROLIFIC ID
          *    Prof. Cutting's circles test server has a known bug that
-         *    occasionally drops the first character of the outgoing URL
-         *    parameter name, producing "rolific_ID" instead of
-         *    "prolific_ID". His server also sends the parameter in
-         *    uppercase as "PROLIFIC_ID" in some configurations.
-         *    All three variants are checked defensively.
+         *    occasionally drops the first character of the parameter
+         *    name, producing "rolific_ID" instead of "prolific_ID".
+         *    His server also uses uppercase "PROLIFIC_ID" in some
+         *    configurations. All three variants are checked.
          *
-         * 2. WM ID (Professor Cutting's database ID)
-         *    His server appends a WMID parameter to the redirect URL,
-         *    e.g. ?WMID=1442&id=1442. This is the key that links a
-         *    participant's circles test record in his database to their
-         *    row in our Google Sheet - captured here as a second
-         *    linking variable alongside the Prolific ID.
+         * 2. WM ID (working memory database ID)
+         *    Prof. Cutting's server appends WMID to the redirect URL
+         *    (e.g. ?WMID=1442&id=1442). This links the participant's
+         *    circles test record to their row in our Google Sheet.
          */
-        const urlParams  = new URLSearchParams(window.location.search);
-        const prolificID = urlParams.get('prolific_ID')
-                        || urlParams.get('rolific_ID')
-                        || urlParams.get('PROLIFIC_ID')
-                        || 'UNKNOWN_OR_MISSING_ID';
+        const urlParams   = new URLSearchParams(window.location.search);
+        const participantProlificID = urlParams.get('prolific_ID')
+                                   || urlParams.get('rolific_ID')
+                                   || urlParams.get('PROLIFIC_ID')
+                                   || 'UNKNOWN_OR_MISSING_ID';
 
-        /* WMID from Prof. Cutting's server - falls back to 'id' parameter
-           which carries the same value in the observed redirect URL */
-        const wmID = urlParams.get('WMID') || urlParams.get('id') || '';
+        /* Falls back to 'id' which carries the same value in the observed URL */
+        const participantWmID = urlParams.get('WMID') || urlParams.get('id') || '';
 
         /*
          * ============================================================
-         * THEME LOGIC
+         * THEME HELPERS
          * ============================================================
-         * applyTheme() updates the root data-theme attribute and syncs
-         * both the in-task toggle icon and the welcome-screen buttons.
+         * applyTheme() is retained so it can be called from the console
+         * or re-wired to a button during piloting. It is not called
+         * automatically during data collection - the theme is fixed to
+         * 'light' via the data-theme attribute on the <html> tag.
+         *
+         * SVG path strings for the toggle icon (sun = currently dark,
+         * moon = currently light) are kept here for completeness.
          */
-        const themeIcon    = document.getElementById('theme-icon');
-        const startLightBtn = document.getElementById('start-light-btn');
-        const startDarkBtn  = document.getElementById('start-dark-btn');
+        const SVG_SUN_PATHS = `
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1"  x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22"  y1="4.22"  x2="5.64"  y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1"  y1="12" x2="3"  y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22"  y1="19.78" x2="5.64"  y2="18.36"></line>
+            <line x1="18.36" y1="5.64"  x2="19.78" y2="4.22"></line>`;
 
-        /* SVG path strings for the theme icon (sun vs moon) */
-        const sunIconPaths  = `<circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`;
-        const moonIconPath  = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+        const SVG_MOON_PATH = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
 
         function applyTheme(themeName) {
             document.documentElement.setAttribute('data-theme', themeName);
-
-            if (themeName === 'dark') {
-                themeIcon.innerHTML = sunIconPaths; /* Show sun = "switch to light" */
-                startDarkBtn.classList.add('active');
-                startLightBtn.classList.remove('active');
-            } else {
-                themeIcon.innerHTML = moonIconPath; /* Show moon = "switch to dark" */
-                startLightBtn.classList.add('active');
-                startDarkBtn.classList.remove('active');
+            /* If the theme toggle icon is present in the DOM, update it */
+            var toggleIcon = document.getElementById('theme-toggle-icon');
+            if (toggleIcon) {
+                toggleIcon.innerHTML = (themeName === 'dark') ? SVG_SUN_PATHS : SVG_MOON_PATH;
             }
         }
 
-        /* Initialise buttons to reflect whatever theme was set by the <head> script */
-        applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
-
-        document.getElementById('theme-toggle').addEventListener('click', function () {
-            var current = document.documentElement.getAttribute('data-theme');
-            applyTheme(current === 'dark' ? 'light' : 'dark');
-        });
-
-        startLightBtn.addEventListener('click', function () { applyTheme('light'); });
-        startDarkBtn.addEventListener('click',  function () { applyTheme('dark');  });
+        /*
+         * Theme toggle event listener - wired up but the button is
+         * commented out in the HTML, so this never fires during the study.
+         * Uncomment the button in the header to restore mid-task switching.
+         */
+        var themeToggleBtn = document.getElementById('theme-toggle-btn');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', function () {
+                var currentTheme = document.documentElement.getAttribute('data-theme');
+                applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            });
+        }
 
         /*
          * ============================================================
-         * DISTRACTOR CONTENT (constant across all five rounds)
+         * DISTRACTOR BOX CONTENT (constant across all rounds)
          * ============================================================
-         * Three sponsored boxes and one trending sidebar are shown on
-         * every round. Their positions within the grid are re-randomised
-         * each time startRound() is called, preventing participants from
-         * habituating to fixed distractor locations (Burke et al., 2005).
+         * Three sponsored boxes and one trending sidebar appear on every
+         * round. Their grid positions are re-randomised each round to
+         * prevent participants habituating to fixed distractor locations
+         * (Burke et al., 2005).
          *
-         * Text content is verbatim from Appendix A of the ethics
-         * submission and must not be altered without ethics amendment.
+         * Content is verbatim from Appendix A of the ethics submission
+         * (project reference jtc511.008). Do not alter without an
+         * ethics amendment.
          */
-        const megaphoneSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
-        const trendingSVG  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`;
+        const MEGAPHONE_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>`;
 
-        const constantDistractors = [
+        const TRENDING_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>`;
+
+        const DISTRACTOR_BOXES = [
             {
-                type: 'sponsored-1',
-                html: `<div class="distractor-tag">${megaphoneSVG} Sponsored</div>
-                       <h2>Compare home insurance quotes today</h2>
-                       <p style="margin:0;">Find the right cover in minutes from leading UK insurers. Save on your annual premium.</p>`
+                cssClass: 'sponsored-1',
+                innerHtml: `<div class="distractor-label">${MEGAPHONE_SVG} Sponsored</div>
+                            <h2>Compare home insurance quotes today</h2>
+                            <p style="margin:0;">Find the right cover in minutes from leading UK
+                            insurers. Save on your annual premium.</p>`
             },
             {
-                type: 'sponsored-2',
-                html: `<div class="distractor-tag">${megaphoneSVG} Sponsored</div>
-                       <h2>Start your free recipe box trial</h2>
-                       <p style="margin:0;">Fresh ingredients delivered weekly. Choose from over 40 recipes and cancel any time.</p>`
+                cssClass: 'sponsored-2',
+                innerHtml: `<div class="distractor-label">${MEGAPHONE_SVG} Sponsored</div>
+                            <h2>Start your free recipe box trial</h2>
+                            <p style="margin:0;">Fresh ingredients delivered weekly. Choose from
+                            over 40 recipes and cancel any time.</p>`
             },
             {
-                type: 'sponsored-3',
-                html: `<div class="distractor-tag">${megaphoneSVG} Sponsored</div>
-                       <h2>Upgrade your broadband this month</h2>
-                       <p style="margin:0;">Faster fibre from £24.99/month. No setup fee, flexible 12-month contracts.</p>`
+                cssClass: 'sponsored-3',
+                innerHtml: `<div class="distractor-label">${MEGAPHONE_SVG} Sponsored</div>
+                            <h2>Upgrade your broadband this month</h2>
+                            <p style="margin:0;">Faster fibre from &pound;24.99/month. No setup
+                            fee, flexible 12-month contracts.</p>`
             },
             {
-                type: 'trending-box',
-                html: `<div class="distractor-tag">${trendingSVG} Trending Now</div>
-                       <ul>
-                           <li>Weather: what to expect this bank holiday weekend</li>
-                           <li>Premier League transfer window: latest updates</li>
-                           <li>Five easy recipes for a midweek family dinner</li>
-                           <li>How to make the most of your annual leave in 2026</li>
-                           <li>The best budget laptops reviewed by our tech team</li>
-                       </ul>`
+                cssClass: 'trending-box',
+                innerHtml: `<div class="distractor-label">${TRENDING_SVG} Trending Now</div>
+                            <ul>
+                                <li>Weather: what to expect this bank holiday weekend</li>
+                                <li>Premier League transfer window: latest updates</li>
+                                <li>Five easy recipes for a midweek family dinner</li>
+                                <li>How to make the most of your annual leave in 2026</li>
+                                <li>The best budget laptops reviewed by our tech team</li>
+                            </ul>`
             }
         ];
 
@@ -767,15 +893,14 @@
          * ============================================================
          * STUDY DATA - APPROVED ARTICLE CONTENT
          * ============================================================
-         * Five search queries, each with exactly 5 target articles and
-         * 11 distractor articles (16 cards per round in total).
+         * Five search rounds, each containing exactly 5 target articles
+         * and 11 distractor articles (16 cards per round in total).
          *
-         * ALL text is verbatim from Appendix A of the University of York
-         * ethics submission (project reference jtc511.008, approved
-         * 24 June 2026). Do not alter any title or abstract without
-         * first obtaining an ethics amendment.
+         * ALL titles and abstracts are verbatim from Appendix A of the
+         * University of York ethics submission (jtc511.008, approved
+         * 24 June 2026). Do not alter any text without an amendment.
          */
-        const studyData = [
+        const studyRounds = [
             {
                 query: "Find all articles about the effects of rising interest rates on household savings.",
                 targets: [
@@ -895,120 +1020,167 @@
 
         /*
          * ============================================================
-         * UTILITY: FISHER-YATES SHUFFLE
+         * FISHER-YATES SHUFFLE
          * ============================================================
-         * In-place array shuffle. Used in three contexts:
-         *   1. Query order (studyData) - counterbalances presentation
-         *      order across participants.
-         *   2. Card order within each round - prevents participants
-         *      learning fixed target positions.
+         * Shuffles an array in place. Used in three places:
+         *   1. Round order (studyRounds) - counterbalances presentation
+         *      order across participants to control for order effects.
+         *   2. Card positions within each round - stops participants
+         *      memorising fixed target locations.
          *   3. Distractor box positions - prevents habituation to a
          *      fixed distractor location (Burke et al., 2005).
          */
-        function shuffleArray(array) {
+        function shuffleArrayInPlace(array) {
             for (var i = array.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var temp = array[i];
+                var j   = Math.floor(Math.random() * (i + 1));
+                var tmp = array[i];
                 array[i] = array[j];
-                array[j] = temp;
+                array[j] = tmp;
             }
         }
 
-        /* Randomise query presentation order across participants */
-        shuffleArray(studyData);
+        /* Randomise round order on page load */
+        shuffleArrayInPlace(studyRounds);
+
+        /* Populate the welcome screen with the (now randomised) Round 1 query */
+        document.getElementById('welcome-screen-query').innerText = studyRounds[0].query;
 
         /*
          * ============================================================
-         * EVENT LISTENERS: WELCOME SCREEN AND SUBMIT BUTTON
+         * WELCOME SCREEN AND SUBMISSION BUTTON - EVENT LISTENERS
          * ============================================================
          */
-        document.getElementById('start-btn').addEventListener('click', function () {
-            document.getElementById('overlay').classList.add('hidden');
-            startRound(currentRound);
+        document.getElementById('start-task-btn').addEventListener('click', function () {
+            document.getElementById('overlay-backdrop').classList.add('hidden');
+            /*
+             * The query preview box on the welcome screen already ensures
+             * participants read the task instruction before clicking Start,
+             * and the query remains visible in the sticky header throughout
+             * the round. No artificial delay is needed here.
+             */
+            startRound(currentRoundIndex);
         });
 
-        document.getElementById('submit-round-btn').addEventListener('click', function () {
-            processRoundSubmission();
+        document.getElementById('found-all-btn').addEventListener('click', function () {
+            scoreAndAdvanceRound();
         });
 
         /*
          * ============================================================
          * startRound(roundIndex)
          * ============================================================
-         * Builds and renders the article grid for a given round, then
+         * Builds and renders the article grid for the given round, then
          * starts the 90-second countdown timer.
          *
-         * Grid construction follows the sandwich method inspired by
-         * Burke et al. (2005): one target article is deliberately
-         * placed between two distractor boxes to maximise interference
-         * for that item. All other positions are randomised.
+         * Grid layout follows the "sandwich" method from Burke et al.
+         * (2005): one target card is deliberately flanked by two
+         * distractor boxes to maximise interference for that item.
+         * All other card and distractor positions are randomised.
          */
         function startRound(roundIndex) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            var data = studyData[roundIndex];
-
-            /* Update the header to show the current query number and text */
-            document.getElementById('round-indicator').innerText = roundIndex + 1;
-            document.getElementById('query-prompt').innerText    = data.query;
-
-            /* Clear the grid from the previous round */
-            var gridContainer = document.getElementById('grid-container');
-            gridContainer.innerHTML = '';
-
-            /* Build a flat array of all 16 article cards for this round */
-            var normalItems = [];
-            data.targets.forEach(function (t) {
-                normalItems.push({ html: createCardHTML(t.title, t.text, true),  isTarget: true  });
-            });
-            data.distractors.forEach(function (d) {
-                normalItems.push({ html: createCardHTML(d.title, d.text, false), isTarget: false });
-            });
-            shuffleArray(normalItems);
+            /* Reset scroll tracker for this round */
+            participantScrolledThisRound = false;
 
             /*
-             * Sandwich construction: remove one target from the shuffled
-             * list and hold it aside. It will be re-inserted flanked by
-             * two distractor boxes (the "bread" slices), creating a
-             * high-interference triplet that increases task difficulty
-             * for that item (Burke et al., 2005, "sandwich effect").
+             * Attach a one-shot scroll listener. It fires on the first
+             * scroll, sets the flag, then removes itself to avoid
+             * repeated writes. Gives us evidence that the participant
+             * viewed cards below the fold (M8 - Scrolling Behaviour).
              */
-            var sandwichTargetIndex = normalItems.findIndex(function (item) { return item.isTarget; });
-            var sandwichedTarget    = normalItems.splice(sandwichTargetIndex, 1)[0];
+            function handleFirstScroll() {
+                participantScrolledThisRound = true;
+                window.removeEventListener('scroll', handleFirstScroll);
+            }
+            /* Remove any listener left over from the previous round */
+            window.removeEventListener('scroll', handleFirstScroll);
+            window.addEventListener('scroll', handleFirstScroll);
 
-            /* Prepare the distractor boxes and pick two as the "bread" */
-            var salientItems = constantDistractors.map(function (cd) {
-                return '<div class="distractor-box ' + cd.type + '" tabindex="0" aria-hidden="true">' + cd.html + '</div>';
+            var roundData = studyRounds[roundIndex];
+
+            /* Update header: round counter and query text */
+            document.getElementById('current-round-number').innerText = roundIndex + 1;
+            document.getElementById('current-query-text').innerText   = roundData.query;
+
+            /* Clear cards from the previous round */
+            var grid = document.getElementById('article-grid');
+            grid.innerHTML = '';
+
+            /*
+             * Build a flat list of all 16 article cards (5 targets +
+             * 11 distractors), then shuffle their positions.
+             */
+            var articleItems = [];
+            roundData.targets.forEach(function (article) {
+                articleItems.push({
+                    html:     buildArticleCardHtml(article.title, article.text, true),
+                    isTarget: true
+                });
             });
-            shuffleArray(salientItems);
+            roundData.distractors.forEach(function (article) {
+                articleItems.push({
+                    html:     buildArticleCardHtml(article.title, article.text, false),
+                    isTarget: false
+                });
+            });
+            shuffleArrayInPlace(articleItems);
 
-            var bread1         = salientItems.pop();
-            var bread2         = salientItems.pop();
-            var sandwichBlock  = [bread1, sandwichedTarget.html, bread2];
+            /*
+             * SANDWICH CONSTRUCTION (Burke et al., 2005):
+             * Pull the first target card out of the shuffled list. It
+             * will be re-inserted with a distractor box on each side -
+             * the "bread" slices - forming a high-interference triplet.
+             */
+            var sandwichTargetIdx = articleItems.findIndex(function (item) {
+                return item.isTarget;
+            });
+            var sandwichedTarget = articleItems.splice(sandwichTargetIdx, 1)[0];
 
-            /* Combine remaining articles and remaining distractor boxes, then shuffle */
-            var finalGrid = normalItems.map(function (item) { return item.html; }).concat(salientItems);
-            shuffleArray(finalGrid);
+            /* Prepare distractor box HTML strings and shuffle their order */
+            var distractorBoxHtmlList = DISTRACTOR_BOXES.map(function (box) {
+                return '<div class="distractor-box ' + box.cssClass + '"'
+                     + ' tabindex="0" aria-hidden="true">'
+                     + box.innerHtml
+                     + '</div>';
+            });
+            shuffleArrayInPlace(distractorBoxHtmlList);
 
-            /* Insert the sandwich block at a random position in the final grid */
-            var insertIndex = Math.floor(Math.random() * (finalGrid.length + 1));
-            finalGrid.splice.apply(finalGrid, [insertIndex, 0].concat(sandwichBlock));
+            /* Take the first two distractor boxes as the sandwich "bread" */
+            var breadLeft  = distractorBoxHtmlList.pop();
+            var breadRight = distractorBoxHtmlList.pop();
+            var sandwichBlock = [breadLeft, sandwichedTarget.html, breadRight];
 
-            /* Render all items into the DOM */
-            finalGrid.forEach(function (itemStr) {
-                gridContainer.insertAdjacentHTML('beforeend', itemStr);
+            /* Combine remaining article cards with remaining distractor boxes */
+            var remainingItems = articleItems.map(function (item) {
+                return item.html;
+            }).concat(distractorBoxHtmlList);
+            shuffleArrayInPlace(remainingItems);
+
+            /* Insert the sandwich block at a random position */
+            var sandwichInsertAt = Math.floor(Math.random() * (remainingItems.length + 1));
+            remainingItems.splice.apply(
+                remainingItems,
+                [sandwichInsertAt, 0].concat(sandwichBlock)
+            );
+
+            /* Inject all items into the DOM */
+            remainingItems.forEach(function (itemHtml) {
+                grid.insertAdjacentHTML('beforeend', itemHtml);
             });
 
-            /* Attach click and keyboard handlers to every article card */
-            var cards = document.querySelectorAll('.card');
-            cards.forEach(function (card) {
+            /* Attach interaction handlers to every article card */
+            document.querySelectorAll('.article-card').forEach(function (card) {
                 card.addEventListener('click', function () {
                     this.classList.toggle('selected');
                     this.setAttribute('aria-pressed', this.classList.contains('selected'));
                 });
 
-                /* Keyboard operability: Enter and Space toggle selection
-                   (WCAG 2.1 Success Criterion 2.1.1 - Keyboard) */
+                /*
+                 * Keyboard: Enter and Space toggle selection so the task
+                 * is operable without a mouse.
+                 * (WCAG 2.1 Success Criterion 2.1.1 - Keyboard)
+                 */
                 card.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
@@ -1017,49 +1189,50 @@
                 });
             });
 
-            /* Reset and start the countdown timer for this round */
-            timeLeft = TIME_LIMIT_SECS;
-            updateTimerDisplay();
-            clearInterval(timerInterval);
-            timerInterval = setInterval(function () {
-                timeLeft--;
-                updateTimerDisplay();
-                if (timeLeft <= 0) {
-                    /* Time expired: auto-submit and advance to the next round */
-                    processRoundSubmission();
+            /* Start the 90-second countdown */
+            secondsRemaining = ROUND_TIME_LIMIT_SECS;
+            refreshTimerDisplay();
+            clearInterval(countdownInterval);
+            countdownInterval = setInterval(function () {
+                secondsRemaining--;
+                refreshTimerDisplay();
+                if (secondsRemaining <= 0) {
+                    /* Time is up - auto-submit this round */
+                    scoreAndAdvanceRound();
                 }
             }, 1000);
         }
 
         /*
-         * createCardHTML(title, text, isTarget)
+         * buildArticleCardHtml(title, bodyText, isTarget)
          * ------------------------------------------------------------
          * Returns the HTML string for a single article card.
-         * data-target stores ground-truth so processRoundSubmission()
-         * can compute TP/FP without needing the studyData array again.
+         * data-is-target stores ground truth so scoreAndAdvanceRound()
+         * can compute TP/FP without re-scanning studyRounds[].
          */
-        function createCardHTML(title, text, isTarget) {
-            return '<div class="card" tabindex="0" role="button" aria-pressed="false" data-target="' + isTarget + '">'
-                 +   '<h2>' + title + '</h2>'
-                 +   '<p>'  + text  + '</p>'
+        function buildArticleCardHtml(title, bodyText, isTarget) {
+            return '<div class="article-card" tabindex="0" role="button"'
+                 + ' aria-pressed="false" data-is-target="' + isTarget + '">'
+                 +   '<h2>' + title    + '</h2>'
+                 +   '<p>'  + bodyText + '</p>'
                  + '</div>';
         }
 
         /*
-         * updateTimerDisplay()
+         * refreshTimerDisplay()
          * ------------------------------------------------------------
-         * Formats timeLeft as MM:SS and updates the timer element.
-         * Applies a warning colour class when fewer than
-         * TIMER_WARNING_SECS seconds remain.
+         * Formats secondsRemaining as MM:SS and updates the timer
+         * element. Adds the warning colour class in the final 15s.
          */
-        function updateTimerDisplay() {
-            var minutes = Math.floor(timeLeft / 60);
-            var seconds = timeLeft % 60;
+        function refreshTimerDisplay() {
+            var mins = Math.floor(secondsRemaining / 60);
+            var secs = secondsRemaining % 60;
             document.getElementById('timer-text').innerText =
-                (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                (mins < 10 ? '0' : '') + mins + ':'
+                + (secs < 10 ? '0' : '') + secs;
 
             var timerEl = document.getElementById('timer-display');
-            if (timeLeft <= TIMER_WARNING_SECS) {
+            if (secondsRemaining <= TIMER_WARNING_SECS) {
                 timerEl.classList.add('timer-warning');
             } else {
                 timerEl.classList.remove('timer-warning');
@@ -1067,83 +1240,77 @@
         }
 
         /*
-         * processRoundSubmission()
+         * scoreAndAdvanceRound()
          * ============================================================
-         * Called when the participant clicks "Submit Query" or the
-         * timer reaches zero. Scores the current round and either
-         * advances to the next round or calls finaliseTask().
+         * Called when the participant clicks "I've Found Them All" or
+         * the timer reaches zero. Scores the round using a confusion
+         * matrix, stores the results, then either shows the next round
+         * or calls finaliseTask() if all five rounds are done.
          *
-         * Scoring uses a per-card confusion matrix:
-         *   TP (true positive)  - target article selected
-         *   FP (false positive) - non-target article selected
-         *   FN (false negative) - target article not selected (always 5 - TP)
+         * Scoring:
+         *   TP (true positives)  - target articles correctly selected
+         *   FP (false positives) - non-target articles selected by mistake
+         *   FN (false negatives) - target articles missed (5 - TP)
          *
-         * Per-round F1 = 2*precision*recall / (precision + recall)
+         *   Per-round F1 = 2 * precision * recall / (precision + recall)
          */
-        function processRoundSubmission() {
-            clearInterval(timerInterval);
+        function scoreAndAdvanceRound() {
+            clearInterval(countdownInterval);
 
-            var timeSpent = TIME_LIMIT_SECS - timeLeft;
-            totalTimeSpent += timeSpent;
+            var secondsUsedThisRound = ROUND_TIME_LIMIT_SECS - secondsRemaining;
+            totalSecondsUsed += secondsUsedThisRound;
 
-            var selectedCards = document.querySelectorAll('.card.selected');
-            var roundTP = 0;
-            var roundFP = 0;
+            var selectedCards = document.querySelectorAll('.article-card.selected');
+            var roundTruePositives  = 0;
+            var roundFalsePositives = 0;
 
             selectedCards.forEach(function (card) {
-                if (card.getAttribute('data-target') === 'true') {
-                    roundTP++;
+                if (card.getAttribute('data-is-target') === 'true') {
+                    roundTruePositives++;
                 } else {
-                    roundFP++;
+                    roundFalsePositives++;
                 }
             });
 
-            var roundFN = 5 - roundTP; /* There are always exactly 5 targets per round */
+            /* Always exactly 5 targets per round */
+            var roundFalseNegatives = 5 - roundTruePositives;
 
-            var rPrecision = (roundTP + roundFP) > 0 ? roundTP / (roundTP + roundFP) : 0;
-            var rRecall    = (roundTP + roundFN) > 0 ? roundTP / (roundTP + roundFN) : 0;
-            var rF1        = (rPrecision + rRecall) > 0
-                             ? 2 * (rPrecision * rRecall) / (rPrecision + rRecall)
-                             : 0;
+            var roundPrecision = (roundTruePositives + roundFalsePositives) > 0
+                ? roundTruePositives / (roundTruePositives + roundFalsePositives) : 0;
+            var roundRecall    = (roundTruePositives + roundFalseNegatives) > 0
+                ? roundTruePositives / (roundTruePositives + roundFalseNegatives) : 0;
+            var roundF1Score   = (roundPrecision + roundRecall) > 0
+                ? 2 * (roundPrecision * roundRecall) / (roundPrecision + roundRecall) : 0;
 
-            /* Store this round's metrics, including the query topic so the
-               Google Sheet records which query appeared in which position
-               for each participant (useful for detecting per-topic difficulty
-               effects and checking for presentation-order confounds). */
-            roundMetrics.push({
-                roundNum:   currentRound + 1,
-                queryTopic: studyData[currentRound].query,
-                time:       timeSpent,
-                tp:         roundTP,
-                fp:         roundFP,
-                fn:         roundFN,
-                f1:         Math.round(rF1 * 1000) / 1000
+            /*
+             * Store this round's results for the Google Sheet payload.
+             * queryTopic is included so the Sheet records which query
+             * appeared in each position (useful for detecting per-topic
+             * difficulty and presentation-order confounds).
+             * tp, fp, and scrolled are raw data captured per M8.
+             */
+            allRoundResults.push({
+                roundNum:   currentRoundIndex + 1,
+                queryTopic: studyRounds[currentRoundIndex].query,
+                time:       secondsUsedThisRound,
+                tp:         roundTruePositives,
+                fp:         roundFalsePositives,
+                fn:         roundFalseNegatives,
+                f1:         Math.round(roundF1Score * 1000) / 1000,
+                scrolled:   participantScrolledThisRound
             });
 
-            /* Accumulate confusion matrix values for the final cumulative F1 */
-            cumulativeTP += roundTP;
-            cumulativeFP += roundFP;
-            cumulativeFN += roundFN;
+            /* Add to the running confusion-matrix totals */
+            truePositives  += roundTruePositives;
+            falsePositives += roundFalsePositives;
+            falseNegatives += roundFalseNegatives;
 
-            currentRound++;
+            currentRoundIndex++;
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            if (currentRound < studyData.length) {
-                /* More rounds remain: show the between-round interstitial */
-                var overlay = document.getElementById('overlay');
-                overlay.classList.remove('hidden');
-                document.getElementById('overlay-content').innerHTML =
-                    '<h2 style="margin-top:0; text-align:center;">Round ' + currentRound + ' Complete</h2>'
-                  + '<p style="font-size:1.1rem; text-align:center;">Get ready for the next search query.</p>'
-                  + '<button class="submit-btn" id="next-btn" style="margin:24px auto 0 auto;">'
-                  +   'Start Round ' + (currentRound + 1)
-                  +   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-                  + '</button>';
-
-                document.getElementById('next-btn').addEventListener('click', function () {
-                    overlay.classList.add('hidden');
-                    startRound(currentRound);
-                });
+            if (currentRoundIndex < studyRounds.length) {
+                /* More rounds to go - show the between-round screen */
+                showBetweenRoundScreen();
             } else {
                 /* All five rounds complete */
                 finaliseTask();
@@ -1151,116 +1318,189 @@
         }
 
         /*
+         * showBetweenRoundScreen()
+         * ------------------------------------------------------------
+         * Displays the interstitial overlay between rounds. Shows the
+         * next round's query in a preview box so participants can read
+         * it before the articles appear (M8 - Enhance Prompt Visibility).
+         */
+        function showBetweenRoundScreen() {
+            var overlay = document.getElementById('overlay-backdrop');
+            overlay.classList.remove('hidden');
+
+            document.getElementById('overlay-card').innerHTML =
+                '<h2 style="margin-top:0; text-align:center;">'
+              +     'Round ' + currentRoundIndex + ' Complete'
+              + '</h2>'
+              + '<p style="font-size:1.1rem; text-align:center; color:var(--text-muted);">'
+              +     'Well done - get ready for the next search query.'
+              + '</p>'
+              + '<div class="query-preview-box">'
+              +     '<div class="query-preview-label">Your next search query</div>'
+              +     '<p class="query-preview-text">'
+              +         studyRounds[currentRoundIndex].query
+              +     '</p>'
+              + '</div>'
+              + '<p style="text-align:center; font-size:0.95rem; color:var(--text-muted);'
+              +           ' margin-bottom:20px;">'
+              +     'The articles will appear <strong>2 seconds</strong> after you click Start.'
+              + '</p>'
+              + '<button class="submit-btn" id="start-next-round-btn"'
+              +         ' style="margin:24px auto 0 auto;">'
+              +     'Start Round ' + (currentRoundIndex + 1)
+              +     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"'
+              +          ' stroke="currentColor" stroke-width="2"'
+              +          ' stroke-linecap="round" stroke-linejoin="round"'
+              +          ' aria-hidden="true">'
+              +         '<line x1="5" y1="12" x2="19" y2="12"></line>'
+              +         '<polyline points="12 5 19 12 12 19"></polyline>'
+              +     '</svg>'
+              + '</button>';
+
+            document.getElementById('start-next-round-btn').addEventListener('click', function () {
+                overlay.classList.add('hidden');
+                /*
+                 * The query preview box on the between-round screen already
+                 * ensures participants read the next query before clicking
+                 * Start. The grid appears immediately and the query remains
+                 * visible in the sticky header throughout the round.
+                 */
+                startRound(currentRoundIndex);
+            });
+        }
+
+        /*
          * finaliseTask()
          * ============================================================
-         * Calculates the final cumulative F1 score across all rounds,
-         * displays a summary table, POSTs results to the Apps Script
-         * endpoint, then redirects to Prolific after 5 seconds.
+         * Called once all five rounds are complete. Computes the overall
+         * cumulative F1 score, POSTs results to Google Sheets via the
+         * Apps Script Web App, then shows the participant debrief.
          *
-         * NOTE ON IP ADDRESS:
-         * The participant's IP address cannot be read from client-side
-         * JavaScript. It is captured server-side by the Apps Script
-         * doPost() function from the incoming HTTP request headers,
-         * matching the approach used by Prof. Cutting's circles test
-         * server. No IP address handling is needed here.
+         * The participant must click "Complete on Prolific" manually -
+         * there is no automatic redirect (M8 - Remove Auto-Redirect).
+         * This ensures they have time to read the debrief before leaving.
          *
-         * NOTE ON CONTENT-TYPE:
-         * The fetch uses Content-Type: text/plain to avoid triggering a
-         * CORS preflight request. Google Apps Script Web Apps do not
-         * send CORS headers on the response, so a preflight would fail.
-         * The body is still valid JSON; Apps Script parses it correctly.
+         * CONTENT-TYPE NOTE:
+         * The fetch uses Content-Type: text/plain to avoid a CORS
+         * preflight. Google Apps Script Web Apps do not return the
+         * Access-Control-Allow-Origin header that a preflight requires,
+         * so a preflight would silently fail. The body is still valid
+         * JSON and Apps Script parses it correctly via e.postData.contents.
          */
         function finaliseTask() {
             /* Compute cumulative precision, recall and F1 across all rounds */
-            var precision   = (cumulativeTP + cumulativeFP) > 0
-                              ? cumulativeTP / (cumulativeTP + cumulativeFP) : 0;
-            var recall      = (cumulativeTP + cumulativeFN) > 0
-                              ? cumulativeTP / (cumulativeTP + cumulativeFN) : 0;
-            var finalF1     = (precision + recall) > 0
-                              ? 2 * (precision * recall) / (precision + recall) : 0;
-            finalF1         = Math.round(finalF1 * 1000) / 1000;
+            var overallPrecision = (truePositives + falsePositives) > 0
+                ? truePositives / (truePositives + falsePositives) : 0;
+            var overallRecall    = (truePositives + falseNegatives) > 0
+                ? truePositives / (truePositives + falseNegatives) : 0;
+            var overallF1Score   = (overallPrecision + overallRecall) > 0
+                ? 2 * (overallPrecision * overallRecall) / (overallPrecision + overallRecall) : 0;
+            overallF1Score = Math.round(overallF1Score * 1000) / 1000;
 
-            /* Build the payload sent to the Google Sheet via Apps Script */
-            var payload = {
-                prolific_id:     prolificID,
-                wm_id:           wmID,           /* Prof. Cutting's database ID for this participant */
-                f1_score:        finalF1,
-                time_secs:       totalTimeSpent,
-                query_breakdown: roundMetrics
+            /* Payload for the Google Apps Script endpoint */
+            var resultsPayload = {
+                prolific_id:     participantProlificID,
+                wm_id:           participantWmID,
+                f1_score:        overallF1Score,
+                time_secs:       totalSecondsUsed,
+                query_breakdown: allRoundResults
             };
 
-            /* Build the per-round results table for the end screen */
-            var tableRows = '';
-            roundMetrics.forEach(function (rm) {
-                tableRows +=
-                    '<tr>'
-                  +   '<td>' + rm.roundNum + '</td>'
-                  +   '<td style="font-size:0.85rem;">' + rm.queryTopic + '</td>'
-                  +   '<td><strong>' + rm.f1 + '</strong></td>'
-                  +   '<td>' + rm.time + 's</td>'
-                  +   '<td>' + rm.tp + ' / 5</td>'
-                  + '</tr>';
-            });
-
-            var breakdownTableHTML =
-                '<table class="results-table">'
-              +   '<thead><tr>'
-              +     '<th>Round</th><th>Query topic</th><th>F1 score</th><th>Time (s)</th><th>Targets found</th>'
-              +   '</tr></thead>'
-              +   '<tbody>' + tableRows + '</tbody>'
-              + '</table>';
-
-            /* Show the end screen overlay with a loading spinner while
-               the fetch request is in flight */
-            var overlay = document.getElementById('overlay');
+            /* Show the end screen with a spinner while results are saving */
+            var overlay = document.getElementById('overlay-backdrop');
             overlay.classList.remove('hidden');
-            document.getElementById('overlay-content').innerHTML =
-                '<h2 style="margin-top:0; colour:#1a73e8; text-align:center;">Task Complete</h2>'
-              + '<p style="text-align:center;">Saving your results. Please wait...</p>'
-              + '<div style="margin-top:20px; display:flex; justify-content:center;">'
-              +   '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 2s linear infinite;" aria-hidden="true">'
-              +     '<line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line>'
-              +     '<line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>'
-              +     '<line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line>'
-              +     '<line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>'
-              +   '</svg>'
+            document.getElementById('overlay-card').innerHTML =
+                '<h2 style="margin-top:0; color:#1a73e8; text-align:center;">'
+              +     'All Done &mdash; Thank You!'
+              + '</h2>'
+              + '<p style="text-align:center; color:var(--text-muted);" id="saving-status-msg">'
+              +     'Saving your results. Please wait&hellip;'
+              + '</p>'
+              + '<div style="margin-top:20px; display:flex; justify-content:center;"'
+              +      ' id="saving-spinner">'
+              +     '<svg width="32" height="32" viewBox="0 0 24 24" fill="none"'
+              +          ' stroke="#1a73e8" stroke-width="2" stroke-linecap="round"'
+              +          ' stroke-linejoin="round"'
+              +          ' style="animation:spin 2s linear infinite;" aria-hidden="true">'
+              +         '<line x1="12" y1="2"  x2="12" y2="6"></line>'
+              +         '<line x1="12" y1="18" x2="12" y2="22"></line>'
+              +         '<line x1="4.93"  y1="4.93"  x2="7.76"  y2="7.76"></line>'
+              +         '<line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>'
+              +         '<line x1="2"  y1="12" x2="6"  y2="12"></line>'
+              +         '<line x1="18" y1="12" x2="22" y2="12"></line>'
+              +         '<line x1="4.93"  y1="19.07" x2="7.76"  y2="16.24"></line>'
+              +         '<line x1="16.24" y1="7.76"  x2="19.07" y2="4.93"></line>'
+              +     '</svg>'
               + '</div>'
-              + '<div class="debug-panel">'
-              +   '<h3 style="margin-top:0;">Task results (Participant ID: ' + prolificID + ')</h3>'
-              +   '<p style="margin-bottom:3px;"><strong>WM ID (circles test):</strong> ' + (wmID || 'Not captured') + '</p>'
-              +   '<p style="margin-bottom:5px;"><strong>Overall F1 score:</strong> <span style="font-size:1.2rem; colour:#d32f2f;">' + finalF1 + '</span></p>'
-              +   '<p style="margin-top:0;"><strong>Total time:</strong> ' + totalTimeSpent + ' seconds</p>'
-              +   breakdownTableHTML
-              +   '<p style="text-align:center; margin-top:15px;"><em>Redirecting to Prolific in 5 seconds...</em></p>'
+              + '<div id="debrief-panel" style="display:none;">'
+              +     '<hr style="border:none; border-top:1px solid var(--card-border); margin:20px 0;">'
+              +     '<h3 style="margin-top:0; color:var(--text-main);">About this study</h3>'
+              +     '<p>Now that you have completed all three parts, we can tell you a little more about what we were investigating.</p>'
+              +     '<p><strong>The circles task</strong> (the first part you completed) measured a specific aspect of visual working memory - in particular, your ability to hold items in mind while filtering out distracting information.</p>'
+              +     '<p><strong>The reading passage</strong> (in the survey) was used as a background measure of reading speed. We presented it as a comprehension task so that you would read at your natural pace rather than rushing. We apologise for not being upfront about this; it was necessary to get a reliable measure.</p>'
+              +     '<p><strong>The news article task</strong> (which you have just completed) was designed to measure how well people can search for relevant information when a page contains lots of distracting visual content - such as animated advertisements and sponsored boxes.</p>'
+              +     '<p>Together, these three measures allow us to explore whether individual differences in visual working memory predict how well people perform on visually cluttered web pages.</p>'
+              +     '<p>Your data has been recorded anonymously and will be used for research purposes. If you have any questions, please contact Dev Vyas at <a href="mailto:xfh530@york.ac.uk" style="color:#1a73e8;">xfh530@york.ac.uk</a>.</p>'
+              +     '<hr style="border:none; border-top:1px solid var(--card-border); margin:20px 0;">'
+              +     '<p style="text-align:center; font-size:0.95rem; color:var(--text-muted);">'
+              +         'When you are ready, click the button below to record your completion on Prolific.'
+              +     '</p>'
+              +     '<a href="' + PROLIFIC_COMPLETE_URL + '"'
+              +        ' class="submit-btn"'
+              +        ' style="margin:12px auto 0 auto; display:flex; text-decoration:none;">'
+              +         'Complete on Prolific'
+              +         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"'
+              +              ' stroke="currentColor" stroke-width="2.5"'
+              +              ' stroke-linecap="round" stroke-linejoin="round"'
+              +              ' aria-hidden="true">'
+              +             '<line x1="5" y1="12" x2="19" y2="12"></line>'
+              +             '<polyline points="12 5 19 12 12 19"></polyline>'
+              +         '</svg>'
+              +     '</a>'
               + '</div>'
               + '<style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>';
 
             /*
-             * POST results to the Google Apps Script Web App.
+             * Once saving is complete (or after a 6-second safety
+             * fallback if no-cors gives us no response), hide the
+             * spinner and show the debrief text.
+             */
+            function revealDebrief() {
+                var statusMsg = document.getElementById('saving-status-msg');
+                var spinner   = document.getElementById('saving-spinner');
+                var debrief   = document.getElementById('debrief-panel');
+                if (statusMsg) statusMsg.style.display = 'none';
+                if (spinner)   spinner.style.display   = 'none';
+                if (debrief)   debrief.style.display   = 'block';
+            }
+
+            /*
+             * POST to Apps Script.
              * mode: 'no-cors' avoids a CORS preflight that Apps Script
-             * cannot respond to. The response is opaque (unreadable),
-             * so the redirect is triggered unconditionally after 5 seconds
-             * regardless of success or failure of the network request.
+             * cannot handle. The response is opaque (we cannot read it),
+             * so revealDebrief() is called in both .then() and .catch().
              */
             try {
                 fetch(APPS_SCRIPT_URL, {
                     method:  'POST',
                     mode:    'no-cors',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body:    JSON.stringify(payload)
-                }).catch(function (error) {
-                    /* Log network errors but do not block the redirect */
-                    console.error('Network error submitting results:', error);
+                    body:    JSON.stringify(resultsPayload)
+                }).then(function () {
+                    revealDebrief();
+                }).catch(function (networkError) {
+                    console.error('Network error when saving results:', networkError);
+                    revealDebrief();
                 });
-            } catch (error) {
-                console.error('Error constructing fetch request:', error);
+            } catch (constructionError) {
+                console.error('Error building fetch request:', constructionError);
+                revealDebrief();
             }
 
-            /* Redirect to Prolific after 5 seconds regardless of fetch outcome */
-            setTimeout(function () {
-                window.location.href = PROLIFIC_COMPLETE_URL;
-            }, 5000);
+            /* Safety net: reveal debrief after 6 seconds regardless */
+            setTimeout(revealDebrief, 6000);
         }
+
     </script>
 </body>
 </html>

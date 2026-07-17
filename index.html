@@ -1391,11 +1391,13 @@
 
             /* Payload for the Google Apps Script endpoint */
             var resultsPayload = {
-                prolific_id:     participantProlificID,
-                wm_id:           participantWmID,
-                f1_score:        overallF1Score,
-                time_secs:       totalSecondsUsed,
-                query_breakdown: allRoundResults
+                prolific_id:      participantProlificID,
+                wm_id:            participantWmID,
+                f1_score:         overallF1Score,
+                time_secs:        totalSecondsUsed,
+                total_correct:    truePositives,   /* Total target articles correctly found across all 5 rounds (max 25) */
+                total_incorrect:  falsePositives,  /* Total distractor articles incorrectly selected across all 5 rounds */
+                query_breakdown:  allRoundResults
             };
 
             /* Show the end screen with a spinner while results are saving */

@@ -12,6 +12,15 @@
     DO NOT alter any article titles or abstracts without first
     obtaining an ethics amendment from the University of York
     Physical Sciences Ethics Committee (approved 24 June 2026).
+
+    CHANGELOG
+    ---------
+    Pilot 1 fix (July 2026):
+    - Added a live selection counter to the sticky header. It
+      updates on every card click and resets to zero at the start
+      of each new round. This gives participants feedback on how
+      many articles they have selected so far, without enforcing
+      a fixed limit or revealing the number of target articles.
     ================================================================
 -->
 <head>
@@ -139,7 +148,7 @@
          * ============================================================
          * Remains fixed at the top of the viewport while the
          * participant scrolls through the article grid, ensuring the
-         * search query and timer are always visible.
+         * search query, timer, and selection counter are always visible.
          */
         header {
             background-color: var(--header-bg);
@@ -178,11 +187,43 @@
             line-height: 1.4;
         }
 
-        /* Right side of header: timer and submission button */
+        /* Right side of header: counter, timer, and submission button */
         .header-controls {
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+
+        /*
+         * ============================================================
+         * LIVE SELECTION COUNTER
+         * ============================================================
+         * Displayed in the sticky header between the query section and
+         * the timer. Updates on every card click via the click handler
+         * in startRound(), and resets to zero at the start of each new
+         * round. This gives participants passive feedback on how many
+         * articles they have selected without revealing the target count
+         * or enforcing a hard limit (which would compromise F1 scoring).
+         */
+        .selection-counter {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+            padding: 6px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            background-color: var(--bg-colour);
+            transition: color 0.2s ease, border-color 0.2s ease;
+        }
+
+        /*
+         * When at least one article is selected, shift the counter
+         * colour to the selection blue so it feels responsive.
+         */
+        .selection-counter.has-selections {
+            color: var(--selected-border);
+            border-color: var(--selected-border);
         }
 
         /*
@@ -566,7 +607,6 @@
                 <p class="query-preview-text" id="welcome-screen-query">Loading...</p>
             </div>
 
-
             <!--
                 Theme selector buttons - commented out for study consistency.
                 All participants use the light theme to remove theme as a
@@ -612,8 +652,8 @@
         STICKY HEADER
         ================================================================
         Remains visible while the participant scrolls the article grid.
-        Shows: current query number, query text, countdown timer,
-        and the "I've Found Them All" submission button.
+        Shows: current query number, query text, live selection counter,
+        countdown timer, and the "I've Found Them All" submission button.
 
         Theme toggle button has been commented out. All participants
         use the light theme during data collection (M8 - Standardise
@@ -654,6 +694,21 @@
                 </svg>
             </button>
             -->
+
+            <!--
+                Live selection counter.
+                Updated by the card click handler in startRound() every
+                time a participant selects or deselects an article card.
+                Reset to zero at the start of each new round.
+                Gives passive feedback without enforcing a fixed limit,
+                which preserves the validity of the F1 scoring approach.
+                aria-live="polite" announces changes to screen readers
+                without interrupting any ongoing speech.
+            -->
+            <div class="selection-counter" id="selection-counter"
+                 aria-live="polite" aria-label="Articles selected">
+                0 selected
+            </div>
 
             <!--
                 Countdown timer.
@@ -1095,9 +1150,18 @@
 
             var roundData = studyRounds[roundIndex];
 
-            /* Update header: round counter and query text */
+            /* Update header: round counter, query text, and selection counter */
             document.getElementById('current-round-number').innerText = roundIndex + 1;
             document.getElementById('current-query-text').innerText   = roundData.query;
+
+            /*
+             * Reset the live selection counter to zero for the new round.
+             * Also remove the active colour class so it returns to its
+             * default muted style until the participant selects something.
+             */
+            var counterEl = document.getElementById('selection-counter');
+            counterEl.innerText = '0 selected';
+            counterEl.classList.remove('has-selections');
 
             /* Clear cards from the previous round */
             var grid = document.getElementById('article-grid');
@@ -1165,11 +1229,30 @@
                 grid.insertAdjacentHTML('beforeend', itemHtml);
             });
 
-            /* Attach interaction handlers to every article card */
+            /*
+             * Attach interaction handlers to every article card.
+             * Each click toggles the card's selected state and then
+             * refreshes the live selection counter in the header.
+             */
             document.querySelectorAll('.article-card').forEach(function (card) {
                 card.addEventListener('click', function () {
                     this.classList.toggle('selected');
                     this.setAttribute('aria-pressed', this.classList.contains('selected'));
+
+                    /*
+                     * Count all currently selected cards and update the
+                     * counter element in the sticky header. The "has-selections"
+                     * class switches the counter to blue when at least one
+                     * card is selected, giving an extra visual cue.
+                     */
+                    var count     = document.querySelectorAll('.article-card.selected').length;
+                    var counterEl = document.getElementById('selection-counter');
+                    counterEl.innerText = count === 1 ? '1 selected' : count + ' selected';
+                    if (count > 0) {
+                        counterEl.classList.add('has-selections');
+                    } else {
+                        counterEl.classList.remove('has-selections');
+                    }
                 });
 
                 /*

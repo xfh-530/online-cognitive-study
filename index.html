@@ -210,22 +210,22 @@
         .selection-counter {
             font-size: 1rem;
             font-weight: 600;
-            background-color: #ffffff;
-            color: #444444;
-            padding: 8px 16px;
-            border-radius: 10px;
-            border: 1.5px solid #d0d0d0;
-            display: flex;
-            align-items: center;
+            color: var(--text-muted);
             white-space: nowrap;
-            letter-spacing: 0.3px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            padding: 6px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            background-color: var(--bg-colour);
+            transition: color 0.2s ease, border-color 0.2s ease;
         }
 
-        [data-theme="dark"] .selection-counter {
-            background-color: #2a2a2a;
-            color: #e0e0e0;
-            border-color: #555;
+        /*
+         * When at least one article is selected, shift the counter
+         * colour to the selection blue so it feels responsive.
+         */
+        .selection-counter.has-selections {
+            color: var(--selected-border);
+            border-color: var(--selected-border);
         }
 
         /*
@@ -798,23 +798,18 @@
             </button>
             -->
 
-            <!--
+                        <!--
                 Live selection counter.
-                Updated on every article card click via the event listener
-                in startRound(). Reset to "0 selected" at the start of
-                each round. Provides feedback without enforcing a hard
-                limit on how many articles the participant may select,
-                keeping F1 scoring unconstrained.
-                (Pilot 1 finding: participants benefited from knowing
-                how many items they had currently selected.)
+                Updated by the card click handler in startRound() every
+                time a participant selects or deselects an article card.
+                Reset to zero at the start of each new round.
+                Gives passive feedback without enforcing a fixed limit,
+                which preserves the validity of the F1 scoring approach.
+                aria-live="polite" announces changes to screen readers
+                without interrupting any ongoing speech.
             -->
             <div class="selection-counter" id="selection-counter"
-                 aria-live="polite" aria-label="Number of articles selected"
-                 style="font-size:1rem; font-weight:600; background-color:#6c757d;
-                        color:#ffffff; padding:8px 16px; border-radius:6px;
-                        display:flex; align-items:center; white-space:nowrap;
-                        letter-spacing:0.3px; box-shadow:none; border:none;
-                        margin:0; line-height:normal;">
+                 aria-live="polite" aria-label="Articles selected">
                 0 selected
             </div>
 
@@ -1296,7 +1291,14 @@
             /* Update header: round counter, query text, and reset the selection counter */
             document.getElementById('current-round-number').innerText = roundIndex + 1;
             document.getElementById('current-query-text').innerText   = roundData.query;
-            document.getElementById('selection-counter').innerText    = '0 selected';
+            /*
+             * Reset the live selection counter to zero for the new round.
+             * Also remove the active colour class so it returns to its
+             * default muted style until the participant selects something.
+             */
+            var counterEl = document.getElementById('selection-counter');
+            counterEl.innerText = '0 selected';
+            counterEl.classList.remove('has-selections');
 
             /* Clear cards from the previous round */
             var grid = document.getElementById('article-grid');
@@ -1374,10 +1376,20 @@
                     this.classList.toggle('selected');
                     this.setAttribute('aria-pressed', this.classList.contains('selected'));
 
-                    /* Update the live selection counter */
-                    var count = document.querySelectorAll('.article-card.selected').length;
-                    document.getElementById('selection-counter').innerText =
-                        count === 1 ? '1 selected' : count + ' selected';
+                    /*
+                     * Count all currently selected cards and update the
+                     * counter element in the sticky header. The "has-selections"
+                     * class switches the counter to blue when at least one
+                     * card is selected, giving an extra visual cue.
+                     */
+                    var count     = document.querySelectorAll('.article-card.selected').length;
+                    var counterEl = document.getElementById('selection-counter');
+                    counterEl.innerText = count === 1 ? '1 selected' : count + ' selected';
+                    if (count > 0) {
+                        counterEl.classList.add('has-selections');
+                    } else {
+                        counterEl.classList.remove('has-selections');
+                    }
                 });
 
                 /*

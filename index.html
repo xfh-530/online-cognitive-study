@@ -12,15 +12,6 @@
     DO NOT alter any article titles or abstracts without first
     obtaining an ethics amendment from the University of York
     Physical Sciences Ethics Committee (approved 24 June 2026).
-
-    CHANGELOG
-    ---------
-    Pilot 1 fix (July 2026):
-    - Added a live selection counter to the sticky header. It
-      updates on every card click and resets to zero at the start
-      of each new round. This gives participants feedback on how
-      many articles they have selected so far, without enforcing
-      a fixed limit or revealing the number of target articles.
     ================================================================
 -->
 <head>
@@ -148,7 +139,7 @@
          * ============================================================
          * Remains fixed at the top of the viewport while the
          * participant scrolls through the article grid, ensuring the
-         * search query, timer, and selection counter are always visible.
+         * search query and timer are always visible.
          */
         header {
             background-color: var(--header-bg);
@@ -187,7 +178,7 @@
             line-height: 1.4;
         }
 
-        /* Right side of header: counter, timer, and submission button */
+        /* Right side of header: selection counter, timer and submission button */
         .header-controls {
             display: flex;
             align-items: center;
@@ -196,34 +187,45 @@
 
         /*
          * ============================================================
-         * LIVE SELECTION COUNTER
+         * SELECTION COUNTER
          * ============================================================
-         * Displayed in the sticky header between the query section and
-         * the timer. Updates on every card click via the click handler
-         * in startRound(), and resets to zero at the start of each new
-         * round. This gives participants passive feedback on how many
-         * articles they have selected without revealing the target count
-         * or enforcing a hard limit (which would compromise F1 scoring).
+         * Displays a live count of how many article cards are currently
+         * selected. Updates on every click via the card event listener
+         * in startRound(). Reset to "0 selected" at the start of each
+         * round. Positioned in the sticky header so it remains visible
+         * as participants scroll through the grid.
+         *
+         * Styled as a contained pill to match the visual weight of the
+         * countdown timer beside it, making it easy to read at a glance.
+         * A lighter grey background distinguishes it from the dark timer
+         * without competing for attention.
+         *
+         * Pilot 1 finding: participants occasionally did not select all
+         * relevant articles, possibly because there was no feedback
+         * about how many they had chosen. This counter provides that
+         * feedback without enforcing a hard limit of five, so F1 scoring
+         * remains unconstrained and the task instructions need not
+         * specify a target number of selections.
          */
         .selection-counter {
             font-size: 1rem;
             font-weight: 600;
-            color: var(--text-muted);
+            background-color: #ffffff;
+            color: #444444;
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1.5px solid #d0d0d0;
+            display: flex;
+            align-items: center;
             white-space: nowrap;
-            padding: 6px 12px;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            background-color: var(--bg-colour);
-            transition: color 0.2s ease, border-color 0.2s ease;
+            letter-spacing: 0.3px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
         }
 
-        /*
-         * When at least one article is selected, shift the counter
-         * colour to the selection blue so it feels responsive.
-         */
-        .selection-counter.has-selections {
-            color: var(--selected-border);
-            border-color: var(--selected-border);
+        [data-theme="dark"] .selection-counter {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #555;
         }
 
         /*
@@ -565,6 +567,106 @@
             line-height: 1.45;
         }
 
+
+        /*
+         * ============================================================
+         * SCROLL INDICATORS
+         * ============================================================
+         * Two floating buttons fixed to the bottom-right of the
+         * viewport. The up arrow appears when the participant has
+         * scrolled down; the down arrow appears when more content
+         * exists below the current viewport bottom.
+         *
+         * Buttons are fully keyboard-operable and carry aria-labels
+         * so screen readers announce their purpose correctly.
+         * (WCAG 2.1 SC 2.1.1 - Keyboard; SC 4.1.2 - Name, Role, Value)
+         *
+         * The indicators are hidden entirely during overlay screens
+         * (welcome, between-round, end) so they never appear on top
+         * of modal content.
+         *
+         * Pilot 2 finding: participants were unaware that additional
+         * article cards existed below the fold. These indicators
+         * provide a visible, actionable cue without interrupting the
+         * task or adding instruction text.
+         */
+        #scroll-indicators {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Hidden when no scrolling is possible in that direction */
+        #scroll-indicators.hidden { display: none !important; }
+
+        .scroll-btn {
+            width: 44px;           /* WCAG 2.1 minimum touch-target size */
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            /*
+             * Semi-transparent background so cards behind the button
+             * remain partially visible, reducing visual obstruction.
+             * At rest the button is subtle (opacity 0.35); hovering
+             * and focusing bring it to full opacity so it is clearly
+             * operable when the participant intends to use it.
+             */
+            background-color: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(4px);       /* Frosted-glass effect on supporting browsers */
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s ease, transform 0.1s ease,
+                        opacity 0.25s ease, visibility 0.25s ease;
+            opacity: 0.72;
+            visibility: visible;
+        }
+
+        .scroll-btn svg {
+            stroke: #444444;
+        }
+
+        /* Full opacity and slightly more opaque background on hover */
+        .scroll-btn:hover {
+            background-color: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+            opacity: 1;
+        }
+
+        .scroll-btn:active {
+            transform: translateY(0);
+        }
+
+        /*
+         * Visible focus ring - meets WCAG 2.1 SC 2.4.7.
+         * Opacity is brought to full when focused via keyboard so the
+         * button is clearly visible to keyboard-only participants.
+         */
+        .scroll-btn:focus-visible {
+            outline: 3px solid #1a73e8;
+            outline-offset: 2px;
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 0.92);
+        }
+
+        /*
+         * Invisible state: opacity-0 + visibility-hidden keeps the
+         * element in the DOM (so layout is not disrupted) but makes
+         * it both visually absent and removed from tab order.
+         */
+        .scroll-btn.invisible {
+            opacity: 0;
+            visibility: hidden;
+        }
+
     </style>
 </head>
 <body>
@@ -606,6 +708,7 @@
                 <div class="query-preview-label">Your search query</div>
                 <p class="query-preview-text" id="welcome-screen-query">Loading...</p>
             </div>
+
 
             <!--
                 Theme selector buttons - commented out for study consistency.
@@ -652,8 +755,8 @@
         STICKY HEADER
         ================================================================
         Remains visible while the participant scrolls the article grid.
-        Shows: current query number, query text, live selection counter,
-        countdown timer, and the "I've Found Them All" submission button.
+        Shows: current query number, query text, countdown timer,
+        and the "I've Found Them All" submission button.
 
         Theme toggle button has been commented out. All participants
         use the light theme during data collection (M8 - Standardise
@@ -697,16 +800,21 @@
 
             <!--
                 Live selection counter.
-                Updated by the card click handler in startRound() every
-                time a participant selects or deselects an article card.
-                Reset to zero at the start of each new round.
-                Gives passive feedback without enforcing a fixed limit,
-                which preserves the validity of the F1 scoring approach.
-                aria-live="polite" announces changes to screen readers
-                without interrupting any ongoing speech.
+                Updated on every article card click via the event listener
+                in startRound(). Reset to "0 selected" at the start of
+                each round. Provides feedback without enforcing a hard
+                limit on how many articles the participant may select,
+                keeping F1 scoring unconstrained.
+                (Pilot 1 finding: participants benefited from knowing
+                how many items they had currently selected.)
             -->
             <div class="selection-counter" id="selection-counter"
-                 aria-live="polite" aria-label="Articles selected">
+                 aria-live="polite" aria-label="Number of articles selected"
+                 style="font-size:1rem; font-weight:600; background-color:#6c757d;
+                        color:#ffffff; padding:8px 16px; border-radius:6px;
+                        display:flex; align-items:center; white-space:nowrap;
+                        letter-spacing:0.3px; box-shadow:none; border:none;
+                        margin:0; line-height:normal;">
                 0 selected
             </div>
 
@@ -750,6 +858,41 @@
           aria-label="Article grid - click cards to select relevant articles">
     </main>
 
+
+    <!--
+        ================================================================
+        SCROLL INDICATORS
+        ================================================================
+        Fixed to the bottom-right corner of the viewport throughout
+        each round. The up arrow scrolls toward the top; the down
+        arrow scrolls toward the bottom. Each button is hidden
+        (opacity 0, removed from tab order) when scrolling in that
+        direction is not possible.
+
+        Both buttons are hidden when the overlay panel is visible
+        so they do not appear on top of the welcome, between-round,
+        or debrief screens. Visibility is toggled by
+        updateScrollIndicators() on every scroll event and at the
+        start of each round.
+    -->
+    <div id="scroll-indicators" class="hidden" aria-label="Page scroll controls">
+        <button class="scroll-btn invisible" id="scroll-up-btn"
+                aria-label="Scroll up to see more articles">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+        </button>
+        <button class="scroll-btn" id="scroll-down-btn"
+                aria-label="Scroll down to see more articles">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+    </div>
 
     <script>
         /*
@@ -1150,18 +1293,10 @@
 
             var roundData = studyRounds[roundIndex];
 
-            /* Update header: round counter, query text, and selection counter */
+            /* Update header: round counter, query text, and reset the selection counter */
             document.getElementById('current-round-number').innerText = roundIndex + 1;
             document.getElementById('current-query-text').innerText   = roundData.query;
-
-            /*
-             * Reset the live selection counter to zero for the new round.
-             * Also remove the active colour class so it returns to its
-             * default muted style until the participant selects something.
-             */
-            var counterEl = document.getElementById('selection-counter');
-            counterEl.innerText = '0 selected';
-            counterEl.classList.remove('has-selections');
+            document.getElementById('selection-counter').innerText    = '0 selected';
 
             /* Clear cards from the previous round */
             var grid = document.getElementById('article-grid');
@@ -1231,28 +1366,18 @@
 
             /*
              * Attach interaction handlers to every article card.
-             * Each click toggles the card's selected state and then
-             * refreshes the live selection counter in the header.
+             * Each click toggles the selected state and refreshes the
+             * live selection counter in the sticky header.
              */
             document.querySelectorAll('.article-card').forEach(function (card) {
                 card.addEventListener('click', function () {
                     this.classList.toggle('selected');
                     this.setAttribute('aria-pressed', this.classList.contains('selected'));
 
-                    /*
-                     * Count all currently selected cards and update the
-                     * counter element in the sticky header. The "has-selections"
-                     * class switches the counter to blue when at least one
-                     * card is selected, giving an extra visual cue.
-                     */
-                    var count     = document.querySelectorAll('.article-card.selected').length;
-                    var counterEl = document.getElementById('selection-counter');
-                    counterEl.innerText = count === 1 ? '1 selected' : count + ' selected';
-                    if (count > 0) {
-                        counterEl.classList.add('has-selections');
-                    } else {
-                        counterEl.classList.remove('has-selections');
-                    }
+                    /* Update the live selection counter */
+                    var count = document.querySelectorAll('.article-card.selected').length;
+                    document.getElementById('selection-counter').innerText =
+                        count === 1 ? '1 selected' : count + ' selected';
                 });
 
                 /*
@@ -1267,6 +1392,15 @@
                     }
                 });
             });
+
+            /*
+             * Show scroll indicators now that the grid is populated.
+             * updateScrollIndicators() is called inside showScrollIndicators()
+             * so the correct up/down state is set immediately.
+             * A short delay allows the DOM to finish painting before
+             * the scroll-height measurement is taken.
+             */
+            setTimeout(showScrollIndicators, 50);
 
             /* Start the 90-second countdown */
             secondsRemaining = ROUND_TIME_LIMIT_SECS;
@@ -1386,6 +1520,13 @@
 
             currentRoundIndex++;
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            /*
+             * Hide scroll indicators before the overlay panel appears
+             * so they are never visible on top of between-round or
+             * debrief screens.
+             */
+            hideScrollIndicators();
 
             if (currentRoundIndex < studyRounds.length) {
                 /* More rounds to go - show the between-round screen */
@@ -1577,6 +1718,76 @@
             /* Safety net: reveal debrief after 6 seconds regardless */
             setTimeout(revealDebrief, 6000);
         }
+
+
+        /*
+         * ============================================================
+         * SCROLL INDICATORS - LOGIC
+         * ============================================================
+         * updateScrollIndicators()
+         * ------------------------------------------------------------
+         * Reads the current scroll position and page height to decide
+         * which arrow buttons should be visible.
+         *
+         *   - Up arrow:   visible when scrollY > 0
+         *   - Down arrow: visible when more content exists below the
+         *                 current viewport bottom (with a 4px tolerance
+         *                 to avoid a permanent down arrow at the very
+         *                 bottom caused by sub-pixel rounding).
+         *
+         * Called on: page scroll, window resize, and at the start of
+         * each round after the grid has been injected into the DOM.
+         *
+         * showScrollIndicators() / hideScrollIndicators()
+         * ------------------------------------------------------------
+         * Toggle the entire #scroll-indicators container. The container
+         * is hidden on overlay screens (welcome, between-round, debrief)
+         * so the buttons never appear on top of modal content.
+         */
+        function updateScrollIndicators() {
+            var scrolledDown  = window.scrollY > 0;
+            var moreBelow     = (window.scrollY + window.innerHeight) < (document.body.scrollHeight - 4);
+
+            var upBtn   = document.getElementById('scroll-up-btn');
+            var downBtn = document.getElementById('scroll-down-btn');
+
+            if (scrolledDown) {
+                upBtn.classList.remove('invisible');
+            } else {
+                upBtn.classList.add('invisible');
+            }
+
+            if (moreBelow) {
+                downBtn.classList.remove('invisible');
+            } else {
+                downBtn.classList.add('invisible');
+            }
+        }
+
+        function showScrollIndicators() {
+            document.getElementById('scroll-indicators').classList.remove('hidden');
+            updateScrollIndicators();
+        }
+
+        function hideScrollIndicators() {
+            document.getElementById('scroll-indicators').classList.add('hidden');
+        }
+
+        /* Scroll by roughly 80% of the viewport height on each button press */
+        document.getElementById('scroll-up-btn').addEventListener('click', function () {
+            window.scrollBy({ top: -(window.innerHeight * 0.8), behavior: 'smooth' });
+        });
+
+        document.getElementById('scroll-down-btn').addEventListener('click', function () {
+            window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+        });
+
+        /* Update arrow visibility on every scroll event */
+        window.addEventListener('scroll', updateScrollIndicators);
+
+        /* Re-check on resize in case the viewport height changes */
+        window.addEventListener('resize', updateScrollIndicators);
+
 
     </script>
 </body>
